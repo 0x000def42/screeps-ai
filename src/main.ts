@@ -1,4 +1,6 @@
 import { ErrorMapper } from "utils/ErrorMapper";
+import processSpawn from "./processors/processSpawn"
+import processCreep from "./processors/processCreep"
 
 declare global {
   /*
@@ -17,8 +19,8 @@ declare global {
 
   interface CreepMemory {
     role: string;
-    room: string;
-    working: boolean;
+    action: string;
+    targetId: Id<_HasId> | null
   }
 
   // Syntax for adding proprties to `global` (ex "global.log")
@@ -34,6 +36,13 @@ declare global {
 export const loop = ErrorMapper.wrapLoop(() => {
   console.log(`Current game tick is ${Game.time}`);
 
+  Object.values(Game.spawns).forEach(spawn => {
+    processSpawn(spawn)
+  })
+
+  Object.values(Game.creeps).forEach(creep => {
+    processCreep(creep)
+  })
   // Automatically delete memory of missing creeps
   for (const name in Memory.creeps) {
     if (!(name in Game.creeps)) {
