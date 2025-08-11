@@ -1,6 +1,12 @@
 import { ErrorMapper } from "utils/ErrorMapper";
+
+import defineRoomPrototypes from "prototypes/room"
+import defineSourcePrototypes from "prototypes/source"
+import defineCreepPrototypes from "prototypes/creep"
+
 import processSpawn from "./processors/processSpawn"
 import processCreep from "./processors/processCreep"
+import processFlags from "./processors/flagsProcessor"
 
 declare global {
   /*
@@ -21,6 +27,8 @@ declare global {
     role: string;
     action: string;
     targetId: Id<_HasId> | null
+    prevAction: string;
+    prevTargetId: Id<_HasId> | null
   }
 
   // Syntax for adding proprties to `global` (ex "global.log")
@@ -31,10 +39,18 @@ declare global {
   }
 }
 
+defineRoomPrototypes()
+defineSourcePrototypes()
+defineCreepPrototypes()
+
+global.log = (some : any) => {
+  console.log(JSON.stringify(some))
+}
+
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
-  console.log(`Current game tick is ${Game.time}`);
+  // console.log(`Current game tick is ${Game.time}`);
 
   Object.values(Game.spawns).forEach(spawn => {
     processSpawn(spawn)
@@ -42,6 +58,10 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   Object.values(Game.creeps).forEach(creep => {
     processCreep(creep)
+  })
+
+  Object.values(Game.rooms).forEach(room => {
+    processFlags(room)
   })
   // Automatically delete memory of missing creeps
   for (const name in Memory.creeps) {
