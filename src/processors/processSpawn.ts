@@ -8,7 +8,7 @@ export default function process (spawn : StructureSpawn){
   const creeps = Object.values(Game.creeps).filter(creep => creep.room == spawn.room)
   const creepsByRole = _.groupBy(creeps, (creep) => creep.memory.role)
   const availableSpawnings = roles.sort((a, b) => a.priority - b.priority)
-  .filter(role => role.size > (creepsByRole[role.name]?.length || 0))
+  .filter(role => role.size(spawn.room) > (creepsByRole[role.name]?.length || 0))
 
   const nextSpawning = availableSpawnings[0]
   if(nextSpawning){
@@ -16,7 +16,9 @@ export default function process (spawn : StructureSpawn){
       memory: {
         role: nextSpawning.name,
         action: 'idle',
-        targetId: null
+        prevAction: 'idle',
+        targetId: null,
+        prevTargetId: null
       }
     })
   }

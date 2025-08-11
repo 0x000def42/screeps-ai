@@ -9,6 +9,8 @@ export default function process(creep : Creep) {
   if(creep.memory.action != "idle"){
     const action = actions[creep.memory.action]
     if(action.isFinish(creep)){
+      creep.memory.prevAction = creep.memory.action
+      creep.memory.prevTargetId = creep.memory.targetId
       creep.memory.action = "idle"
       creep.memory.targetId = null
     }
@@ -17,16 +19,17 @@ export default function process(creep : Creep) {
   // Select action and target
   if(creep.memory.action == "idle"){
     role.actions.sort((a, b) => a.priority - b.priority)
-    .forEach(({name}) => {
+    .forEach((roleAction) => {
       if(creep.memory.action == "idle"){
-        const action = actions[name]
-        console.log(action.name)
-        const targetId = action.targetId(creep.room)
-        if(targetId){
-          const canStart = action.canStart(creep)
-          if(canStart) {
-            creep.memory.action = name
-            creep.memory.targetId = targetId
+        if(roleAction.closure(creep)) {
+          const action = actions[roleAction.name]
+          const targetId = action.targetId(creep)
+          if(targetId){
+            const canStart = action.canStart(creep)
+            if(canStart) {
+              creep.memory.action = action.name
+              creep.memory.targetId = targetId
+            }
           }
         }
       }
