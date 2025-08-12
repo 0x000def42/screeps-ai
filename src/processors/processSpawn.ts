@@ -5,6 +5,9 @@ function creepName(role : string){
 }
 
 export default function process (spawn : StructureSpawn){
+  // if(Game.time % 5 != 0){
+  //   return
+  // }
   const creeps = Object.values(Game.creeps).filter(creep => creep.room == spawn.room)
   const creepsByRole = _.groupBy(creeps, (creep) => creep.memory.role)
   const availableSpawnings = roles.sort((a, b) => a.priority - b.priority)
@@ -12,14 +15,18 @@ export default function process (spawn : StructureSpawn){
 
   const nextSpawning = availableSpawnings[0]
   if(nextSpawning){
-    spawn.spawnCreep(nextSpawning.body, creepName(nextSpawning.name), {
+    spawn.memory.nextSpawning = true
+    spawn.spawnCreep(nextSpawning.body(spawn.room), creepName(nextSpawning.name), {
       memory: {
         role: nextSpawning.name,
         action: 'idle',
         prevAction: 'idle',
         targetId: null,
         prevTargetId: null
-      }
+      },
+      directions: [spawn.pos.getDirectionTo(spawn.room.controller?.pos as RoomPosition), LEFT, RIGHT, TOP, BOTTOM]
     })
+  } else {
+    spawn.memory.nextSpawning = false
   }
 }

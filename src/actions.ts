@@ -9,13 +9,14 @@ export interface CreepAction {
 const creepEmpty = (creep : Creep) => creep.store[RESOURCE_ENERGY] == 0
 const creepFull = (creep : Creep) => creep.store[RESOURCE_ENERGY] == creep.store.getCapacity()
 const creepNotEmpty = (creep : Creep) => creep.store[RESOURCE_ENERGY] > 0
+const creepNotFull = (creep : Creep) => creep.store[RESOURCE_ENERGY] < creep.store.getCapacity()
 const structureFull = (structure : StructureSpawn | StructureExtension) => structure.store[RESOURCE_ENERGY] == structure.store.getCapacity(RESOURCE_ENERGY)
 
 const actions = {
   harvest: {
     name: "harvest",
     targetId: creep => creep.pos.findClosestByPath(FIND_SOURCES)?.id,
-    canStart: creepEmpty,
+    canStart: creepNotFull,
     isFinish: creepFull,
     act: (creep, target : Source) => creep.harvest(target)
   },
@@ -24,7 +25,7 @@ const actions = {
     targetId: creep => creep.pos.findClosestByPath(FIND_SOURCES, {
       filter: (source) => source.creeps.filter(cr => cr != creep && cr.memory.action == "harvestSolo").length == 0
     })?.id,
-    canStart: creepEmpty,
+    canStart: creepNotFull,
     isFinish: creepFull,
     act: (creep, target : Source) => creep.harvest(target)
   },
@@ -57,14 +58,28 @@ const actions = {
     isFinish: (creep) => creepEmpty(creep) || structureFull(creep.target as StructureExtension),
     act: (creep, target : StructureSpawn) => creep.transfer(target, RESOURCE_ENERGY)
   },
-  build: {
-    name: "build",
-    targetId: creep => creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
+  buildNear: {
+    name: "buildNear",
+    targetId: creep => creep.pos.findInRange(FIND_MY_CONSTRUCTION_SITES, 3, {
       filter: (site) => Object.values(Game.creeps).filter(cr => cr != creep && (cr.memory.targetId == site.id || cr.memory.prevTargetId == site.id)).length == 0
-    })?.id,
+    })[0]?.id,
     canStart: creepFull,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
     act: (creep, target : ConstructionSite) => creep.build(target)
+  },
+  build: {
+    name: "build",
+    targetId: creep => creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES,)?.id,
+    canStart: creepFull,
+    isFinish: (creep) => !creep.target || creepEmpty(creep),
+    act: (creep, target : ConstructionSite) => creep.build(target)
+  },
+  withdraw: {
+    name: "withdraw",
+    targetId: creep => creep.room.spawns[0].id,
+    canStart: creepEmpty,
+    isFinish: creepFull,
+    act: (creep, target : StructureSpawn) => creep.withdraw(target, RESOURCE_ENERGY)
   }
 } as Record<string, CreepAction>
 
