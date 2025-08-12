@@ -1,5 +1,6 @@
 interface Room {
   sources: Source[]
+  spawns: StructureSpawn[]
 }
 
 interface Source {

@@ -2,7 +2,7 @@ import actions, { CreepAction } from 'actions'
 
 interface CreepRole {
   name: string;
-  body: BodyPartConstant[];
+  body: (room: Room) => BodyPartConstant[];
   priority: number;
   size: (room: Room) => number;
   actions: CreepRoleAction[];
@@ -25,8 +25,8 @@ export function buildAction(action: CreepAction, priority: number, closure: (cre
 const roles: CreepRole[] = [];
 
 roles.push({
-  name: "upgrader",
-  body: [WORK, MOVE, CARRY],
+  name: "worker",
+  body: (_room) => [WORK, MOVE, CARRY],
   priority: 0,
   size: (_room: Room) => 2,
   actions: [
@@ -39,13 +39,26 @@ roles.push({
 
 roles.push({
   name: "extension_builder",
-  body: [WORK, WORK, MOVE, CARRY],
+  body: (_room) => [WORK, WORK, MOVE, CARRY],
   priority: 1,
-  size: (room: Room) => room.find(FIND_MY_CONSTRUCTION_SITES).length == 0 ? 0 : _.min([room.sources.length, 3]),
+  size: (room: Room) => _.min([room.sources.length, 3]),
   actions: [
     buildAction(actions.harvestSolo, 0),
-    buildAction(actions.build, 1),
-    buildAction(actions.transferToNearestExtension, 2)
+    buildAction(actions.transferToNearestExtension, 1),
+    buildAction(actions.buildNear, 2),
+  ]
+});
+
+roles.push({
+  name: "upgrader",
+  body: (_room) => [WORK, WORK, WORK, CARRY, MOVE],
+  priority: 2,
+  size: (_room: Room) => 1,
+  actions: [
+    buildAction(actions.withdraw, 0),
+    buildAction(actions.transferToNearestExtension, 1),
+    buildAction(actions.buildNear, 2, (creep: Creep) => !creep.room.spawns[0].memory.nextSpawning),
+    buildAction(actions.upgrade, 3)
   ]
 });
 
