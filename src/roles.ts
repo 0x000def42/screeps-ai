@@ -53,13 +53,27 @@ roles.push({
   name: "upgrader",
   body: (_room) => [WORK, WORK, WORK, CARRY, MOVE],
   priority: 2,
-  size: (_room: Room) => 1,
+  size: (_room: Room) => 3,
   actions: [
     buildAction(actions.withdraw, 0),
     buildAction(actions.transferToNearestExtension, 1),
     buildAction(actions.buildNear, 2, (creep: Creep) => !creep.room.spawns[0].memory.nextSpawning),
-    buildAction(actions.upgrade, 3)
+    buildAction(actions.upgrade, 3, (creep: Creep) => !creep.room.spawns[0].memory.nextSpawning)
   ]
-});
+})
+
+roles.push({
+  name: "suicider",
+  body: (_room) => [CARRY, MOVE],
+  priority: 0,
+  size: (room: Room) => room.extensions.filter(ext => ext.pos.findInRange(FIND_SOURCES, 2)).length >= 2 && room.spawns[0].store[RESOURCE_ENERGY] <= 250 ? 1 : 0,
+  actions: [
+    buildAction(actions.transfer, 0),
+    buildAction(actions.pickupNear, 1),
+    buildAction(actions.withdrawNearTombstone, 2),
+    buildAction(actions.recycle, 3),
+  ],
+
+})
 
 export default roles;

@@ -23,7 +23,7 @@ const actions = {
   harvestSolo: {
     name: "harvestSolo",
     targetId: creep => creep.pos.findClosestByPath(FIND_SOURCES, {
-      filter: (source) => source.creeps.filter(cr => cr != creep && cr.memory.action == "harvestSolo").length == 0
+      filter: (source) => source.creeps.filter(cr => cr != creep && cr.memory.action == "harvestSolo").length == 0 && source.pos.findInRange(FIND_HOSTILE_CREEPS, 5).length == 0
     })?.id,
     canStart: creepNotFull,
     isFinish: creepFull,
@@ -44,7 +44,7 @@ const actions = {
       }
     })[0]?.id,
     canStart: creepFull,
-    isFinish: (creep) => creepEmpty(creep) || structureFull(creep.target as StructureSpawn),
+    isFinish: (creep) => creepNotFull(creep) || structureFull(creep.target as StructureSpawn),
     act: (creep, target : StructureSpawn) => creep.transfer(target, RESOURCE_ENERGY)
   },
   transferToNearestExtension: {
@@ -80,6 +80,27 @@ const actions = {
     canStart: creepEmpty,
     isFinish: creepFull,
     act: (creep, target : StructureSpawn) => creep.withdraw(target, RESOURCE_ENERGY)
+  },
+  pickupNear: {
+    name: "pickupNear",
+    targetId: creep => creep.pos.findInRange(FIND_DROPPED_RESOURCES, 2)[0]?.id,
+    canStart: creepEmpty,
+    isFinish: (creep) => creepNotEmpty(creep) || !creep.target,
+    act: (creep, target : Resource) => creep.pickup(target)
+  },
+  withdrawNearTombstone: {
+    name: "withdrawNearTombstone",
+    targetId: creep => creep.pos.findInRange(FIND_TOMBSTONES, 2)[0]?.id,
+    canStart: creepEmpty,
+    isFinish: (creep) => creepNotEmpty(creep) || !creep.target,
+    act: (creep, target : Tombstone) => creep.withdraw(target, RESOURCE_ENERGY)
+  },
+  recycle: {
+    name: "recycle",
+    targetId: creep => creep.room.spawns[0].id,
+    canStart: () => true,
+    isFinish: () => false,
+    act: (creep, target : StructureSpawn) => target.recycleCreep(creep)
   }
 } as Record<string, CreepAction>
 

@@ -24,7 +24,12 @@ export default function process (spawn : StructureSpawn){
         targetId: null,
         prevTargetId: null
       },
-      directions: [spawn.pos.getDirectionTo(spawn.room.controller?.pos as RoomPosition), LEFT, RIGHT, TOP, BOTTOM]
+      directions: [spawn.pos.getDirectionTo(spawn.room.controller?.pos as RoomPosition), LEFT, RIGHT, TOP, BOTTOM],
+      energyStructures: [
+        ...spawn.room.extensions.filter(ext => !ext.pos.findInRange(FIND_SOURCES, 2)),
+        ...spawn.room.extensions,
+        spawn
+      ]
     })
   } else {
     spawn.memory.nextSpawning = false
