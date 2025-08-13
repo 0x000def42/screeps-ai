@@ -36,19 +36,22 @@ roles.push({
     return 1
   },
   actions: [
-    buildAction(actions.upgrade, 1, (creep: Creep) => creep.room.controller?.level == 1),
-    buildAction(actions.transfer, 2, (creep: Creep) => creep.room.extensions.length < 2),
-    buildAction(actions.build, 3),
-    buildAction(actions.harvest, 4),
-    buildAction(actions.upgrade, 5),
+    buildAction(actions.upgrade, 0, (creep: Creep) => creep.room.controller?.level == 1),
+    buildAction(actions.restoreExtension, 1, (creep : Creep) => creep.room.creeps.filter((creep) => creep.memory.role == "extension_builder").length < _.min([creep.room.sources.length, 3])),
+    buildAction(actions.transferToSpawn, 2, (creep: Creep) => creep.room.extensions.length < 2),
+    buildAction(actions.buildWalls, 3, (creep: Creep) => creep.room.extensions.length > 1),
+    buildAction(actions.build, 4),
+    buildAction(actions.harvest, 5),
+    buildAction(actions.upgrade, 6),
   ]
 });
 
 roles.push({
   name: "extension_builder",
   body: (room) => {
-    const size = (room.energy - 50) / 250
-    return [..._.flatten(_.times(size, () => [WORK, WORK, MOVE])), CARRY]
+    if(room.energy >= 700) return [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE]
+    if(room.energy >= 550) return [WORK, WORK, WORK, WORK, MOVE, MOVE, CARRY]
+    return [WORK, WORK, MOVE, CARRY]
   },
   priority: 1,
   size: (room: Room) => _.min([room.sources.length, 3]),
@@ -66,12 +69,16 @@ roles.push({
     return [..._.flatten(_.times(size, () => [WORK])), MOVE, CARRY]
   },
   priority: 2,
-  size: (_room: Room) => 3,
+  size: (room: Room) => {
+    if(room.extensions.length < 2) return 0
+    return 3
+  },
   actions: [
-    buildAction(actions.withdraw, 0),
+    buildAction(actions.withdrawFromSpawn, 0, (creep: Creep) => !creep.room.spawns[0].container),
+    buildAction(actions.withdrawFromSpawnContainer, 0, (creep: Creep) => !!creep.room.spawns[0].container),
     buildAction(actions.transferToNearestExtension, 1),
-    buildAction(actions.buildNear, 2, (creep: Creep) => !creep.room.spawns[0].memory.nextSpawning),
-    buildAction(actions.upgrade, 3, (creep: Creep) => !creep.room.spawns[0].memory.nextSpawning)
+    buildAction(actions.buildNear, 2, (creep : Creep) => creep.room.creeps.filter((creep) => creep.memory.role == "extension_builder").length == _.min([creep.room.sources.length, 3])),
+    buildAction(actions.upgrade, 3, (creep : Creep) => creep.room.creeps.filter((creep) => creep.memory.role == "extension_builder").length == _.min([creep.room.sources.length, 3]))
   ]
 })
 
@@ -79,12 +86,14 @@ roles.push({
   name: "suicider",
   body: (_room) => [CARRY, MOVE],
   priority: 0,
-  size: (room: Room) => room.extensions.filter(ext => ext.pos.findInRange(FIND_SOURCES, 2)).length >= 2 && room.spawns[0].store[RESOURCE_ENERGY] < 300 ? 1 : 0,
+  size: (room: Room) => room.extensions.filter(ext => ext.pos.findInRange(FIND_SOURCES, 2)).length >= 2 && (room.spawns[0].store[RESOURCE_ENERGY] < 300 || (room.spawns[0].container && room.spawns[0].container.store[RESOURCE_ENERGY] < 2000)) ? 2 : 0,
   actions: [
-    buildAction(actions.transfer, 0),
-    buildAction(actions.pickupNear, 1),
-    buildAction(actions.withdrawNearTombstone, 2),
-    buildAction(actions.recycle, 3, (creep) => creep.room.spawns[0].store[RESOURCE_ENERGY] < 300),
+    buildAction(actions.transferToSpawn, 0),
+    buildAction(actions.restoreExtension, 1, (creep : Creep) => creep.room.creeps.filter((creep) => creep.memory.role == "extension_builder").length < _.min([creep.room.sources.length, 3])),
+    buildAction(actions.transferToSpawnContainer, 2, (creep : Creep) => creep.room.creeps.filter((creep) => creep.memory.role == "extension_builder").length == _.min([creep.room.sources.length, 3])),
+    buildAction(actions.pickupNear, 3),
+    buildAction(actions.withdrawNearTombstone, 4),
+    buildAction(actions.recycle, 5, (creep) => creep.room.spawns[0].store[RESOURCE_ENERGY] < 300 || (!!creep.room.spawns[0].container && creep.room.spawns[0].container.store[RESOURCE_ENERGY] < 2000)),
   ],
 
 })

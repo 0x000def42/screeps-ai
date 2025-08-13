@@ -8,7 +8,7 @@ export default function process (spawn : StructureSpawn){
   // if(Game.time % 5 != 0){
   //   return
   // }
-  const creeps = Object.values(Game.creeps).filter(creep => creep.room == spawn.room)
+  const creeps = Object.values(Game.creeps).filter(creep => creep.room == spawn.room && (creep.ticksToLive || 0) > 50)
   const creepsByRole = _.groupBy(creeps, (creep) => creep.memory.role)
   const availableSpawnings = roles.sort((a, b) => a.priority - b.priority)
   .filter(role => role.size(spawn.room) > (creepsByRole[role.name]?.length || 0))

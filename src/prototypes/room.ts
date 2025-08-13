@@ -21,6 +21,11 @@ export default function definePrototypes(){
       get() : number {
         return (this as Room).extensions.length * 50 + 300
       }
+    },
+    creeps: {
+      get() : Creep[] {
+        return (this as Room).find(FIND_MY_CREEPS)
+      }
     }
   })
 }
