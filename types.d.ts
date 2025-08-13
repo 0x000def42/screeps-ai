@@ -3,6 +3,7 @@ interface Room {
   sources: Source[]
   spawns: StructureSpawn[]
   extensions: StructureExtension[]
+  creeps: Creep[]
 }
 
 interface Source {
@@ -12,4 +13,8 @@ interface Source {
 
 interface Creep {
   target: _HasId
+}
+
+interface StructureSpawn {
+  container: StructureContainer | null
 }

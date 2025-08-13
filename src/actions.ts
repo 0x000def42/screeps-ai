@@ -23,7 +23,7 @@ const actions = {
   harvestSolo: {
     name: "harvestSolo",
     targetId: creep => creep.pos.findClosestByPath(FIND_SOURCES, {
-      filter: (source) => source.creeps.filter(cr => cr != creep && cr.memory.action == "harvestSolo").length == 0 && source.pos.findInRange(FIND_HOSTILE_CREEPS, 5).length == 0
+      filter: (source) => source.creeps.filter(cr => cr != creep && (cr.memory.action == "harvestSolo" || cr.memory.prevAction == "harvestSolo")).length == 0 && source.pos.findInRange(FIND_HOSTILE_CREEPS, 5).length == 0
     })?.id,
     canStart: creepNotFull,
     isFinish: creepFull,
@@ -36,20 +36,27 @@ const actions = {
     isFinish: creepEmpty,
     act: (creep, target : StructureController) => creep.upgradeController(target)
   },
-  transfer: {
-    name: "transfer",
+  transferToSpawn: {
+    name: "transferToSpawn",
     targetId: creep => creep.room.find(FIND_MY_SPAWNS, {
       filter: function(structure){
         return structure.store[RESOURCE_ENERGY] < (structure.store.getCapacity(RESOURCE_ENERGY) || 0)
       }
     })[0]?.id,
-    canStart: creepFull,
+    canStart: creepNotEmpty,
+    isFinish: (creep) => creepNotFull(creep) || structureFull(creep.target as StructureSpawn),
+    act: (creep, target : StructureSpawn) => creep.transfer(target, RESOURCE_ENERGY)
+  },
+  transferToSpawnContainer: {
+    name: "transferToSpawnContainer",
+    targetId: creep => creep.room.spawns[0].container?.id,
+    canStart: creepNotEmpty,
     isFinish: (creep) => creepNotFull(creep) || structureFull(creep.target as StructureSpawn),
     act: (creep, target : StructureSpawn) => creep.transfer(target, RESOURCE_ENERGY)
   },
   transferToNearestExtension: {
     name: "transferToNearestExtension",
-    targetId: creep => creep.pos.findInRange(FIND_MY_STRUCTURES, 2, {
+    targetId: creep => creep.pos.findInRange(FIND_MY_STRUCTURES, 1, {
       filter: function(structure){
         return structure.structureType == STRUCTURE_EXTENSION && structure.store[RESOURCE_ENERGY] < (structure.store.getCapacity(RESOURCE_ENERGY) || 0)
       }
@@ -58,11 +65,22 @@ const actions = {
     isFinish: (creep) => creepEmpty(creep) || structureFull(creep.target as StructureExtension),
     act: (creep, target : StructureSpawn) => creep.transfer(target, RESOURCE_ENERGY)
   },
+  restoreExtension: {
+    name: "restoreExtension",
+    targetId: creep => creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+      filter: function(structure){
+        return structure.structureType == STRUCTURE_EXTENSION && structure.store[RESOURCE_ENERGY] < (structure.store.getCapacity(RESOURCE_ENERGY) || 0)
+      }
+    })?.id,
+    canStart: creepNotEmpty,
+    isFinish: (creep) => creepEmpty(creep) || structureFull(creep.target as StructureExtension),
+    act: (creep, target : StructureSpawn) => creep.transfer(target, RESOURCE_ENERGY)
+  },
   buildNear: {
     name: "buildNear",
-    targetId: creep => creep.pos.findInRange(FIND_MY_CONSTRUCTION_SITES, 3, {
-      filter: (site) => Object.values(Game.creeps).filter(cr => cr != creep && (cr.memory.targetId == site.id || cr.memory.prevTargetId == site.id)).length == 0
-    })[0]?.id,
+    targetId: creep => creep.pos.findInRange(FIND_MY_CONSTRUCTION_SITES, 3,
+      // { filter: (site) => Object.values(Game.creeps).filter(cr => cr != creep && (cr.memory.targetId == site.id || cr.memory.prevTargetId == site.id)).length == 0 }
+    )[0]?.id,
     canStart: creepFull,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
     act: (creep, target : ConstructionSite) => creep.build(target)
@@ -74,35 +92,67 @@ const actions = {
     isFinish: (creep) => !creep.target || creepEmpty(creep),
     act: (creep, target : ConstructionSite) => creep.build(target)
   },
-  withdraw: {
-    name: "withdraw",
+  buildWalls: {
+    name: "buildWalls",
+    targetId: creep => creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
+      filter: (site) => site.structureType == STRUCTURE_WALL
+    })?.id,
+    canStart: creepNotEmpty,
+    isFinish: (creep) => !creep.target || creepEmpty(creep),
+    act: (creep, target : ConstructionSite) => creep.build(target)
+  },
+  withdrawFromSpawn: {
+    name: "withdrawFromSpawn",
     targetId: creep => creep.room.spawns[0].id,
     canStart: creepEmpty,
     isFinish: creepFull,
     act: (creep, target : StructureSpawn) => creep.withdraw(target, RESOURCE_ENERGY)
   },
+  withdrawFromSpawnContainer: {
+    name: "withdrawFromSpawnContainer",
+    targetId: creep => {
+      const container = creep.room.spawns[0].container as StructureContainer
+      if(container.store[RESOURCE_ENERGY] == 0) return undefined
+      return container.id
+    },
+    canStart: creepEmpty,
+    isFinish: (creep) => creepFull(creep) || creep.room.spawns[0].container?.store[RESOURCE_ENERGY] == 0,
+    act: (creep, target : StructureContainer) => creep.withdraw(target, RESOURCE_ENERGY)
+  },
   pickupNear: {
     name: "pickupNear",
-    targetId: creep => creep.pos.findInRange(FIND_DROPPED_RESOURCES, 2)[0]?.id,
-    canStart: creepEmpty,
+    targetId: creep => creep.pos.findInRange(FIND_DROPPED_RESOURCES, 4)[0]?.id,
+    canStart: creepNotFull,
     isFinish: (creep) => creepNotEmpty(creep) || !creep.target,
     act: (creep, target : Resource) => creep.pickup(target)
   },
   withdrawNearTombstone: {
     name: "withdrawNearTombstone",
-    targetId: creep => creep.pos.findInRange(FIND_TOMBSTONES, 2)[0]?.id,
+    targetId: creep => creep.pos.findInRange(FIND_TOMBSTONES, 4, {
+      filter: (tomb) => tomb.store[RESOURCE_ENERGY] > 0
+    })[0]?.id,
     canStart: creepEmpty,
-    isFinish: (creep) => creepNotEmpty(creep) || !creep.target,
+    isFinish: (creep) => creepNotEmpty(creep) || !creep.target || (creep.target as Tombstone).store[RESOURCE_ENERGY] == 0,
     act: (creep, target : Tombstone) => creep.withdraw(target, RESOURCE_ENERGY)
   },
   recycle: {
     name: "recycle",
     targetId: creep => creep.room.spawns[0].id,
-    canStart: () => true,
+    canStart: (creep) => creep.store[RESOURCE_ENERGY] == 0,
     isFinish: () => false,
     act: (creep, target : StructureSpawn) => target.recycleCreep(creep)
   }
 } as Record<string, CreepAction>
 
-export default actions
+const actionsProxy = new Proxy(actions, {
+  get(target, prop: string) {
+    if (!(prop in target)) {
+      console.log(`Attempted to access undefined action: ${prop}`);
+      return undefined; // Возвращаем undefined для несуществующего ключа
+    }
+    return target[prop];
+  }
+});
+
+export default actionsProxy;
 

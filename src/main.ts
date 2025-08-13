@@ -3,6 +3,7 @@ import { ErrorMapper } from "utils/ErrorMapper";
 import defineRoomPrototypes from "prototypes/room"
 import defineSourcePrototypes from "prototypes/source"
 import defineCreepPrototypes from "prototypes/creep"
+import defineSpawnPrototypes from "prototypes/spawn"
 
 import processSpawn from "./processors/processSpawn"
 import processCreep from "./processors/processCreep"
@@ -46,6 +47,7 @@ declare global {
 defineRoomPrototypes()
 defineSourcePrototypes()
 defineCreepPrototypes()
+defineSpawnPrototypes()
 
 global.log = (some : any) => {
   console.log(JSON.stringify(some))
