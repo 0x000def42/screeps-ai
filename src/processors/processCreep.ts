@@ -3,6 +3,7 @@ import roles from "roles";
 import actions from "actions";
 
 export default function process(creep : Creep) {
+  if(creep.spawning) return
   const role = roles.filter(role => role.name == creep.memory.role)[0]
 
   // Reset action on finish
@@ -46,6 +47,15 @@ export default function process(creep : Creep) {
     if(actResult == ERR_BUSY) return
     if(actResult == ERR_NOT_IN_RANGE) {
       creep.moveTo(target)
+      return
+    }
+    if((actResult as number) == -6){
+      creep.memory.targetId = null
+      return
+    }
+    if((actResult as number) == -7){
+      creep.memory.action = "idle"
+      creep.memory.targetId = null
       return
     }
     creep.say(`${action.name}:${actResult}`)

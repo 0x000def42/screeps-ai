@@ -8,6 +8,7 @@ import defineSpawnPrototypes from "prototypes/spawn"
 import processSpawn from "./processors/processSpawn"
 import processCreep from "./processors/processCreep"
 import processFlags from "./processors/flagsProcessor"
+import processRoom from "./processors/processRoom"
 
 declare global {
   /*
@@ -62,12 +63,13 @@ export const loop = ErrorMapper.wrapLoop(() => {
     processSpawn(spawn)
   })
 
-  Object.values(Game.creeps).forEach(creep => {
+  _.shuffle(Object.values(Game.creeps)).forEach(creep => {
     processCreep(creep)
   })
 
   Object.values(Game.rooms).forEach(room => {
     processFlags(room)
+    processRoom(room)
   })
   // Automatically delete memory of missing creeps
   for (const name in Memory.creeps) {
