@@ -16,6 +16,11 @@ export default function definePrototypes(){
           filter: (structure) => structure.structureType == STRUCTURE_EXTENSION
         })
       }
+    },
+    energy: {
+      get() : number {
+        return (this as Room).extensions.length * 50 + 300
+      }
     }
   })
 }

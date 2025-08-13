@@ -26,20 +26,30 @@ const roles: CreepRole[] = [];
 
 roles.push({
   name: "worker",
-  body: (_room) => [WORK, MOVE, CARRY],
+  body: (room) => {
+    const size = room.energy / 200
+    return _.flatten(_.times(size, () => [WORK, MOVE, CARRY]))
+  },
   priority: 0,
-  size: (_room: Room) => 2,
+  size: (room: Room) => {
+    if(room.extensions.length < 2) return 2
+    return 1
+  },
   actions: [
-    buildAction(actions.harvest, 0),
     buildAction(actions.upgrade, 1, (creep: Creep) => creep.room.controller?.level == 1),
-    buildAction(actions.transfer, 2),
-    buildAction(actions.upgrade, 3)
+    buildAction(actions.transfer, 2, (creep: Creep) => creep.room.extensions.length < 2),
+    buildAction(actions.build, 3),
+    buildAction(actions.harvest, 4),
+    buildAction(actions.upgrade, 5),
   ]
 });
 
 roles.push({
   name: "extension_builder",
-  body: (_room) => [WORK, WORK, MOVE, CARRY],
+  body: (room) => {
+    const size = (room.energy - 50) / 250
+    return [..._.flatten(_.times(size, () => [WORK, WORK, MOVE])), CARRY]
+  },
   priority: 1,
   size: (room: Room) => _.min([room.sources.length, 3]),
   actions: [
@@ -51,7 +61,10 @@ roles.push({
 
 roles.push({
   name: "upgrader",
-  body: (_room) => [WORK, WORK, WORK, CARRY, MOVE],
+  body: (room) => {
+    const size = (room.energy / 100) - 1
+    return [..._.flatten(_.times(size, () => [WORK])), MOVE, CARRY]
+  },
   priority: 2,
   size: (_room: Room) => 3,
   actions: [
@@ -66,12 +79,12 @@ roles.push({
   name: "suicider",
   body: (_room) => [CARRY, MOVE],
   priority: 0,
-  size: (room: Room) => room.extensions.filter(ext => ext.pos.findInRange(FIND_SOURCES, 2)).length >= 2 && room.spawns[0].store[RESOURCE_ENERGY] <= 250 ? 1 : 0,
+  size: (room: Room) => room.extensions.filter(ext => ext.pos.findInRange(FIND_SOURCES, 2)).length >= 2 && room.spawns[0].store[RESOURCE_ENERGY] < 300 ? 1 : 0,
   actions: [
     buildAction(actions.transfer, 0),
     buildAction(actions.pickupNear, 1),
     buildAction(actions.withdrawNearTombstone, 2),
-    buildAction(actions.recycle, 3),
+    buildAction(actions.recycle, 3, (creep) => creep.room.spawns[0].store[RESOURCE_ENERGY] < 300),
   ],
 
 })

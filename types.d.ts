@@ -1,4 +1,5 @@
 interface Room {
+  energy: number
   sources: Source[]
   spawns: StructureSpawn[]
   extensions: StructureExtension[]
