@@ -69,8 +69,8 @@ const actions = {
   },
   build: {
     name: "build",
-    targetId: creep => creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES,)?.id,
-    canStart: creepFull,
+    targetId: creep => creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES)?.id,
+    canStart: creepNotEmpty,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
     act: (creep, target : ConstructionSite) => creep.build(target)
   },
