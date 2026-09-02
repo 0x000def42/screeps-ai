@@ -1,3 +1,5 @@
+import { barrierTargetHits } from "processors/processRoom"
+
 export interface CreepAction {
   name: string,
   targetId: (creep: Creep) => Id<_HasId> | null,
@@ -226,6 +228,21 @@ const actions = {
     )[0]?.id,
     canStart: creepNotEmpty,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
+    act: (creep, target : AnyStructure) => creep.repair(target)
+  },
+  repairBarrier: {
+    name: "repairBarrier",
+    targetId: creep => {
+      return creep.room.find(FIND_STRUCTURES, {
+        filter: structure => structure.hits < barrierTargetHits(structure)
+      }).sort((a, b) => a.hits - b.hits)[0]?.id
+    },
+    canStart: creepNotEmpty,
+    isFinish: (creep) => {
+      if(!creep.target) return true
+      const target = creep.target as AnyStructure
+      return creepEmpty(creep) || target.hits >= barrierTargetHits(target)
+    },
     act: (creep, target : AnyStructure) => creep.repair(target)
   },
   repairNear: {

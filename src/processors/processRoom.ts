@@ -27,15 +27,10 @@ export default function process(room : Room){
     }).forEach(tower => (tower as StructureTower).attack(hostile))
   } else {
 
-    const walls : (StructureWall | StructureRampart)[] = room.find(FIND_STRUCTURES, {
-      filter: (structure : AnyStructure) => structure.hits < barrierTargetHits(structure)
-    }) as (StructureWall | StructureRampart)[]
-
     let structure : (StructureContainer | StructureRampart | StructureWall) = room.find(FIND_STRUCTURES, {
       filter: (structure : AnyStructure) => (structure.hitsMax > structure.hits && structure.structureType == STRUCTURE_CONTAINER)
     })[0] as (StructureContainer | StructureRampart | StructureWall)
 
-    structure ||= walls.sort((a, b) => a.hits - b.hits)[0]
 
     if(structure){
       room.find(FIND_MY_STRUCTURES, {

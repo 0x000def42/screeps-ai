@@ -130,12 +130,13 @@ roles.push({
     buildAction(actions.repair, 1),
     buildAction(actions.buildNearSpawn, 2),
     buildAction(actions.buildWalls, 3),
-    buildAction(actions.build, 8),
-    buildAction(actions.upgrade, 9),
-    buildAction(actions.withdrawFromNearestContainer, 4, {closure: (creep : Creep) => !!creep.room.find(FIND_CONSTRUCTION_SITES, {filter: paidConstructionSite})[0]}),
-    buildAction(actions.withdrawFromSourceContainer, 5),
-    buildAction(actions.harvestBalanced, 6),
-    buildAction(actions.withdrawFromHarvestCreep, 7),
+    buildAction(actions.repairBarrier, 4),
+    buildAction(actions.build, 9),
+    buildAction(actions.upgrade, 10),
+    buildAction(actions.withdrawFromNearestContainer, 5, {closure: (creep : Creep) => !!creep.room.find(FIND_CONSTRUCTION_SITES, {filter: paidConstructionSite})[0]}),
+    buildAction(actions.withdrawFromSourceContainer, 6),
+    buildAction(actions.harvestBalanced, 7),
+    buildAction(actions.withdrawFromHarvestCreep, 8),
   ]
 })
 
@@ -176,8 +177,8 @@ roles.push({
     buildAction(actions.transferToSpawn, 1),
     buildAction(actions.transferToAnotherContainer, 2),
     buildAction(actions.transferToSpawnContainer, 3),
-    buildAction(actions.withdrawFromSourceContainer, 5),
-    buildAction(actions.withdrawFromHarvestCreep, 7),
+    buildAction(actions.withdrawFromSourceContainer, 6),
+    buildAction(actions.withdrawFromHarvestCreep, 8),
   ]
 })
 
