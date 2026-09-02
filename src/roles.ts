@@ -27,6 +27,8 @@ export function buildAction(action: CreepAction, priority: number, opts : any = 
   } as CreepRoleAction;
 }
 
+const paidConstructionSite = (site : ConstructionSite) => site.structureType != STRUCTURE_WALL && site.structureType != STRUCTURE_RAMPART
+
 const roles: CreepRole[] = [];
 
 roles.push({
@@ -117,12 +119,13 @@ roles.push({
     buildAction(actions.upgrade, 1, {closure: (creep : Creep) => creep.room.controller?.my && creep.room.controller.level < 2 }),
     buildAction(actions.repair, 1),
     buildAction(actions.buildNearSpawn, 2),
-    buildAction(actions.build, 7),
-    buildAction(actions.upgrade, 8),
-    buildAction(actions.withdrawFromNearestContainer, 3, {closure: (creep : Creep) => !!creep.room.find(FIND_CONSTRUCTION_SITES)[0]}),
-    buildAction(actions.withdrawFromSourceContainer, 4),
-    buildAction(actions.harvestBalanced, 5),
-    buildAction(actions.withdrawFromHarvestCreep, 6),
+    buildAction(actions.buildWalls, 3),
+    buildAction(actions.build, 8),
+    buildAction(actions.upgrade, 9),
+    buildAction(actions.withdrawFromNearestContainer, 4, {closure: (creep : Creep) => !!creep.room.find(FIND_CONSTRUCTION_SITES, {filter: paidConstructionSite})[0]}),
+    buildAction(actions.withdrawFromSourceContainer, 5),
+    buildAction(actions.harvestBalanced, 6),
+    buildAction(actions.withdrawFromHarvestCreep, 7),
   ]
 })
 
@@ -164,7 +167,7 @@ roles.push({
     buildAction(actions.transferToAnotherContainer, 2),
     buildAction(actions.transferToSpawnContainer, 3),
     buildAction(actions.withdrawFromSourceContainer, 5),
-    buildAction(actions.withdrawFromHarvestCreep, 6),
+    buildAction(actions.withdrawFromHarvestCreep, 7),
   ]
 })
 
@@ -183,7 +186,7 @@ roles.push({
   priority: 3,
   size: (room: Room) => {
     if(room.energy >= 1700) return 1
-    if(room.find(FIND_CONSTRUCTION_SITES).length > 0) return 0
+    if(room.find(FIND_CONSTRUCTION_SITES, {filter: paidConstructionSite}).length > 0) return 0
     if(room.spawns[0].anotherContainer && room.spawns[0].anotherContainer.store[RESOURCE_ENERGY] < 1900) return 0
     if(!room.spawns[0].container || room.sources.filter(s => s.container).length == 0) return 0
     const size = Math.floor(room.energy / 100) - 1

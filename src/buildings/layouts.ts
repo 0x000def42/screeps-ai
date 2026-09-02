@@ -162,6 +162,59 @@ const towersLayout = (room : Room) => {
   return positions
 }
 
+const wallEdges = [
+  (depth : number, index : number) => [depth, index],
+  (depth : number, index : number) => [49 - depth, index],
+  (depth : number, index : number) => [index, depth],
+  (depth : number, index : number) => [index, 49 - depth]
+]
+
+const wallsLayout = (room : Room) => {
+  const positions : any = []
+  const terrain = Game.map.getRoomTerrain(room.name)
+  const batchLimit = 10
+
+  const isRock = (x : number, y : number) => terrain.get(x, y) == TERRAIN_MASK_WALL
+
+  const claim = (x : number, y : number) => {
+    if(positions.length >= batchLimit) return
+    if(x < 1 || x > 48 || y < 1 || y > 48) return
+    if(isRock(x, y)) return
+    const pos = new RoomPosition(x, y, room.name)
+    if(pos.lookFor(LOOK_CONSTRUCTION_SITES)[0]) return
+    if(pos.lookFor(LOOK_STRUCTURES).filter(s => s.structureType != STRUCTURE_ROAD)[0]) return
+    positions.push({ pos, type: STRUCTURE_WALL })
+  }
+
+  const sealRun = (edge : (depth : number, index : number) => number[], from : number, to : number) => {
+    const lo = Math.max(1, from - 2)
+    const hi = Math.min(48, to + 2)
+    for(let i = lo; i <= hi; i++){
+      const line = edge(2, i)
+      claim(line[0], line[1])
+    }
+    const lowCap = edge(1, lo)
+    claim(lowCap[0], lowCap[1])
+    const highCap = edge(1, hi)
+    claim(highCap[0], highCap[1])
+  }
+
+  wallEdges.forEach(edge => {
+    let runStart = -1
+    for(let i = 0; i <= 50; i++){
+      const border = i < 50 ? edge(0, i) : null
+      const open = !!border && !isRock(border[0], border[1])
+      if(open && runStart < 0) runStart = i
+      if(!open && runStart >= 0){
+        sealRun(edge, runStart, i - 1)
+        runStart = -1
+      }
+    }
+  })
+
+  return positions
+}
+
 // global.h.checkLayout("sim", "roadsLayout")
 const roadsLayout = (room : Room) => {
   const positions : any = []
@@ -178,5 +231,5 @@ const roadsLayout = (room : Room) => {
 }
 
 export default {
-  sourceContainerLayout, roadsLayout, sourceExtensionsLayout, extensions, towersLayout
+  sourceContainerLayout, roadsLayout, sourceExtensionsLayout, extensions, towersLayout, wallsLayout
 }
