@@ -125,19 +125,24 @@ export default function manageExpansion() {
   }
 
 
-  const bases = owned.filter(readyToExpand)
-  if(bases.length == 0){
-    Memory.scoutTarget = null
+  const candidateKnown = Object.keys(Memory.intel).some(name => {
+    const intel = Memory.intel[name]
+    return !intel.keeper && !intel.owner && intel.claimable && intel.sources >= 2
+  })
+
+  if(!candidateKnown){
+    Memory.scoutTarget = nextScoutTarget()
     return
   }
+
+  Memory.scoutTarget = null
+
+  const bases = owned.filter(readyToExpand)
+  if(bases.length == 0) return
 
   const target = bestExpansion(bases)
   if(target){
     console.log(`expansion into ${target.room} from ${target.base}`)
     Memory.expansion = { room: target.room, base: target.base }
-    Memory.scoutTarget = null
-    return
   }
-
-  Memory.scoutTarget = nextScoutTarget()
 }

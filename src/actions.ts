@@ -19,6 +19,14 @@ export const settings : any = {
   exits: {}
 }
 
+const claimedTargets = () => {
+  const claimed : { [id : string] : boolean } = {}
+  Object.values(Game.creeps).forEach(creep => {
+    if(creep.memory.targetId) claimed[creep.memory.targetId as string] = true
+  })
+  return claimed
+}
+
 const actions = {
   harvest: {
     name: "harvest",
@@ -233,8 +241,9 @@ const actions = {
   repairBarrier: {
     name: "repairBarrier",
     targetId: creep => {
+      const claimed = claimedTargets()
       return creep.room.find(FIND_STRUCTURES, {
-        filter: structure => structure.hits < barrierTargetHits(structure)
+        filter: structure => structure.hits < barrierTargetHits(structure) && !claimed[structure.id]
       }).sort((a, b) => a.hits - b.hits)[0]?.id
     },
     canStart: creepNotEmpty,
@@ -259,9 +268,12 @@ const actions = {
   },
   buildWalls: {
     name: "buildWalls",
-    targetId: creep => creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
-      filter: (site) => site.structureType == STRUCTURE_WALL || site.structureType == STRUCTURE_RAMPART
-    })?.id,
+    targetId: creep => {
+      const claimed = claimedTargets()
+      return creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
+        filter: (site) => (site.structureType == STRUCTURE_WALL || site.structureType == STRUCTURE_RAMPART) && !claimed[site.id]
+      })?.id
+    },
     canStart: creepNotEmpty,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
     act: (creep, target : ConstructionSite) => creep.build(target)
