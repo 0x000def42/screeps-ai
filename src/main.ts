@@ -15,6 +15,7 @@ import defineLayouts from "./buildings/check"
 import processBuilding from "buildings/processBuilding";
 import defineMetrics, { accrueSourcePotential } from "./metrics"
 import manageExpansion from "./expansion"
+import { measure } from "./profiler"
 import exportStats from "./stats"
 // import profiler from "screeps-profiler"
 
@@ -34,7 +35,7 @@ declare global {
     log: any;
     badRoomNames: any
     sources: any
-    metrics: { rooms: { [roomName: string]: { [flow: string]: number } } }
+    metrics: { rooms: { [roomName: string]: { [flow: string]: number } }, cpu: { [section: string]: number } }
     intel: { [roomName: string]: { sources: number, sourcePositions: { x: number, y: number }[], controller: { x: number, y: number } | null, owner: string | null, claimable: boolean, keeper: boolean, fit: number, seen: number } }
     expansion: { room: string, base: string } | null
     scoutTarget: string | null
@@ -105,35 +106,38 @@ Memory.sources ||= {}
 // profiler.enable()
 
 export const loop = ErrorMapper.wrapLoop(() => {
-  // profiler.wrap(function() {
-    // if(Game.cpu.bucket == 10000) {
-    //   Game.cpu.generatePixel();
-    // }
-    if(Game.time % 10 == 0) console.log(`Current game tick is ${Game.time}`);
+  if(Game.time % 10 == 0) console.log(`Current game tick is ${Game.time}`);
 
+  measure("creeps", () => {
     Object.values(Game.creeps).forEach(creep => {
-      processCreep(creep)
+      measure(`creep.${creep.memory.role}`, () => processCreep(creep))
     })
+  })
 
+  measure("rooms", () => {
     Object.values(Game.rooms).forEach(room => {
-      processFlags(room)
-      processRoom(room)
+      measure("rooms.flags", () => processFlags(room))
+      measure("rooms.defence", () => processRoom(room))
     })
+  })
 
-    // Automatically delete memory of missing creeps
+  measure("cleanup", () => {
     for (const name in Memory.creeps) {
       if (!(name in Game.creeps)) {
         delete Memory.creeps[name];
       }
     }
-    processBuilding()
+  })
 
+  measure("building", () => processBuilding())
+
+  measure("spawns", () => {
     Object.values(Game.spawns).forEach(spawn => {
       processSpawn(spawn)
     })
+  })
 
-    manageExpansion()
-    accrueSourcePotential()
-    exportStats()
-  // })
+  measure("expansion", () => manageExpansion())
+  measure("sourcePotential", () => accrueSourcePotential())
+  measure("stats", () => exportStats())
 });

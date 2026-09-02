@@ -4,7 +4,7 @@ const sinkFlows: EnergyFlow[] = ["upgraded", "built", "repaired", "spawned", "to
 const rolesRecycledOnSpawn = ["suicider"]
 
 function flowsOf(roomName: string) {
-  Memory.metrics ||= { rooms: {} }
+  Memory.metrics ||= { rooms: {}, cpu: {} }
   Memory.metrics.rooms[roomName] ||= {}
   return Memory.metrics.rooms[roomName]
 }
@@ -111,7 +111,7 @@ export function accrueSourcePotential() {
 }
 
 export default function defineMetrics() {
-  Memory.metrics ||= { rooms: {} }
+  Memory.metrics ||= { rooms: {}, cpu: {} }
   instrumentCreep()
   instrumentSpawn()
   instrumentTower()

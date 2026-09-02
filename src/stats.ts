@@ -45,6 +45,12 @@ export default function() {
   Memory.stats.gcl.progressTotal = Game.gcl.progressTotal;
   Memory.stats.gcl.level         = Game.gcl.level;
 
+  const cpuSections = (Memory.metrics && Memory.metrics.cpu) || {};
+  Memory.stats.cpu.sections = {};
+  for (let section in cpuSections) {
+    Memory.stats.cpu.sections[section] = cpuSections[section];
+  }
+
   // Collect CPU stats
   Memory.stats.cpu.bucket        = Game.cpu.bucket;
   Memory.stats.cpu.limit         = Game.cpu.limit;
