@@ -357,6 +357,21 @@ const actions = {
       return OK
     }
   },
+  scoutRoom: {
+    name: "scoutRoom",
+    targetId: creep => creep.id,
+    canStart: () => !!Memory.scoutTarget,
+    isFinish: (creep) => !Memory.scoutTarget || creep.room.name == Memory.scoutTarget,
+    act: (creep) => {
+      const target = Memory.scoutTarget as string
+      if(creep.room.name == target) return OK
+      const exit = creep.room.findExitTo(target)
+      if(exit == ERR_NO_PATH || exit == ERR_INVALID_ARGS) return OK
+      const step = creep.pos.findClosestByPath(exit as ExitConstant)
+      if(step) creep.moveTo(step, { reusePath: 10 })
+      return OK
+    }
+  },
   scout: {
     name: "scout",
     targetId: creep => creep.id,

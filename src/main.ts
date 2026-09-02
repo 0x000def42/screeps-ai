@@ -14,6 +14,7 @@ import processRoom from "./processors/processRoom"
 import defineLayouts from "./buildings/check"
 import processBuilding from "buildings/processBuilding";
 import defineMetrics, { accrueSourcePotential } from "./metrics"
+import manageExpansion from "./expansion"
 import exportStats from "./stats"
 // import profiler from "screeps-profiler"
 
@@ -34,6 +35,9 @@ declare global {
     badRoomNames: any
     sources: any
     metrics: { rooms: { [roomName: string]: { [flow: string]: number } } }
+    intel: { [roomName: string]: { sources: number, owner: string | null, claimable: boolean, keeper: boolean, seen: number } }
+    expansion: { room: string, base: string } | null
+    scoutTarget: string | null
   }
 
   interface RoomMemory {
@@ -127,6 +131,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
       processSpawn(spawn)
     })
 
+    manageExpansion()
     accrueSourcePotential()
     exportStats()
   // })

@@ -32,6 +32,20 @@ const paidConstructionSite = (site : ConstructionSite) => site.structureType != 
 const roles: CreepRole[] = [];
 
 roles.push({
+  name: "scout",
+  body: () => [MOVE],
+  priority: 0,
+  size: () => {
+    if(!Memory.scoutTarget) return 0
+    return 1 - Object.values(Game.creeps).filter(creep => creep.memory.role == "scout").length
+  },
+  actions: [
+    buildAction(actions.scoutRoom, 0)
+  ]
+})
+
+roles.push({
+
   name: "remoteBuilder",
   body: (room) => {
     const size = Math.floor((room.energy - 100) / 200)

@@ -69,8 +69,8 @@ function instrumentSpawn() {
     name: string,
     opts?: SpawnOptions
   ) {
-    const result = spawnCreep.call(this, body, name, opts)
     const role = opts && opts.memory ? opts.memory.role : ""
+    const result = spawnCreep.call(this, body, name, opts)
     if (result == OK && !(opts && opts.dryRun) && rolesRecycledOnSpawn.indexOf(role) < 0) {
       track(this.room.name, "spawned", body.reduce((total, part) => total + BODYPART_COST[part], 0))
     }

@@ -51,6 +51,8 @@ const checksLenght = checks.length
 
 export default () => {
   Object.values(Game.rooms).forEach(room => {
+    if(!room.controller || !room.controller.my || !room.spawns[0]) return
+
     if(Game.time % 10 == 0){
       if(Game.time % 50 == 0){
         exitGates(room).forEach(gateway => {

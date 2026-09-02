@@ -1,7 +1,7 @@
 const wallTargetHits = 10000
-const rampartTargetHits = 25000
+const rampartTargetHits = 5000
 
-const barrierTargetHits = (structure : AnyStructure) => {
+export const barrierTargetHits = (structure : AnyStructure) => {
   if(structure.structureType == STRUCTURE_RAMPART) return rampartTargetHits
   if(structure.structureType == STRUCTURE_WALL) return wallTargetHits
   return 0
