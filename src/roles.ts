@@ -81,15 +81,15 @@ roles.push({
   },
   priority: 0,
   size: (room: Room) => {
-    if((room.controller as StructureController).level < 4) return 0
-    const claimFlag = Object.values(Game.flags).filter(flag => flag.name == "claim")[0]
-    if(!claimFlag) return 0
-    const controller = claimFlag.room?.controller
-    if(!controller || !controller.my) return Object.values(Game.flags).filter(flag => flag.name == "claim").length * 1- Object.values(Game.creeps).filter(creep => creep.memory.role == "claimer").length
-    return 0
+    const expansion = Memory.expansion
+    if(!expansion || expansion.base != room.name) return 0
+    const target = Game.rooms[expansion.room]
+    if(target && target.controller && target.controller.my) return 0
+    return 1 - Object.values(Game.creeps).filter(creep => creep.memory.role == "claimer").length
   },
   actions: [
-    buildAction(actions.claimRoom, 0)
+    buildAction(actions.claimExpansion, 0),
+    buildAction(actions.leaveBorder, 1)
   ]
 })
 

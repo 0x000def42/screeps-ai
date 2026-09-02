@@ -357,6 +357,31 @@ const actions = {
       return OK
     }
   },
+  claimExpansion: {
+    name: "claimExpansion",
+    targetId: creep => creep.id,
+    canStart: () => !!Memory.expansion,
+    isFinish: () => {
+      if(!Memory.expansion) return true
+      const target = Game.rooms[Memory.expansion.room]
+      return !!target && !!target.controller && !!target.controller.my
+    },
+    act: (creep) => {
+      const expansion = Memory.expansion as { room : string, base : string }
+      if(creep.room.name != expansion.room){
+        const exit = creep.room.findExitTo(expansion.room)
+        if(exit == ERR_NO_PATH || exit == ERR_INVALID_ARGS) return OK
+        const step = creep.pos.findClosestByPath(exit as ExitConstant)
+        if(step) creep.moveTo(step, { reusePath: 10 })
+        return OK
+      }
+      const controller = creep.room.controller
+      if(!controller) return OK
+      if(creep.pos.inRangeTo(controller, 1)) creep.claimController(controller)
+      else creep.moveTo(controller, { reusePath: 10 })
+      return OK
+    }
+  },
   leaveBorder: {
     name: "leaveBorder",
     targetId: creep => creep.id,
