@@ -1,17 +1,32 @@
 import roles from "roles";
 
-import actions from "actions";
+import actions, {settings} from "actions";
 
 export default function process(creep : Creep) {
   if(creep.spawning) return
+  if(creep.hits < creep.hitsMax){
+    if(creep.room.controller && creep.room.controller.my) {}
+    else if (!Memory.badRoomNames[creep.room.name]){
+      Memory.badRoomNames[creep.room.name] = true
+      settings.exits = {}
+      settings.gamePaths = {}
+      console.log('BAD ROOM!', creep.room.name)
+    }
+  }
+
   const role = roles.filter(role => role.name == creep.memory.role)[0]
 
   // Reset action on finish
   if(creep.memory.action != "idle"){
     const action = actions[creep.memory.action]
     if(action.isFinish(creep)){
-      creep.memory.prevAction = creep.memory.action
-      creep.memory.prevTargetId = creep.memory.targetId
+      if(role.actions.filter(a => a.name == creep.memory.action)[0]?.storePrevAction){
+        creep.memory.prevAction = creep.memory.action
+        creep.memory.prevTargetId = creep.memory.targetId
+      } else {
+        creep.memory.prevAction = "idle"
+        creep.memory.prevTargetId = null
+      }
       creep.memory.action = "idle"
       creep.memory.targetId = null
     }
@@ -46,7 +61,10 @@ export default function process(creep : Creep) {
     if(actResult == OK) return
     if(actResult == ERR_BUSY) return
     if(actResult == ERR_NOT_IN_RANGE) {
-      creep.moveTo(target)
+      creep.moveTo(target, {
+        reusePath: 2,
+        costCallback: creep.room.costCallback,
+      })
       return
     }
     if((actResult as number) == -6){

@@ -31,5 +31,8 @@
     "port": 21025,
     "path": "/",
     "branch": "main"
+  },
+  "local": {
+    "localPath": "../screeps-local"
   }
 }

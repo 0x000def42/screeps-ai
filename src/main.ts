@@ -3,12 +3,20 @@ import { ErrorMapper } from "utils/ErrorMapper";
 import defineRoomPrototypes from "prototypes/room"
 import defineSourcePrototypes from "prototypes/source"
 import defineCreepPrototypes from "prototypes/creep"
+import defineStructuresPrototypes from "prototypes/structures"
 import defineSpawnPrototypes from "prototypes/spawn"
 
 import processSpawn from "./processors/processSpawn"
 import processCreep from "./processors/processCreep"
 import processFlags from "./processors/flagsProcessor"
 import processRoom from "./processors/processRoom"
+
+import defineLayouts from "./buildings/check"
+import processBuilding from "buildings/processBuilding";
+import defineMetrics, { accrueSourcePotential } from "./metrics"
+import exportStats from "./stats"
+// import profiler from "screeps-profiler"
+
 
 declare global {
   /*
@@ -23,6 +31,17 @@ declare global {
   interface Memory {
     uuid: number;
     log: any;
+    badRoomNames: any
+    sources: any
+    metrics: { rooms: { [roomName: string]: { [flow: string]: number } } }
+  }
+
+  interface RoomMemory {
+    _extensionsIds: Array<Id<_HasId>>
+  }
+
+  interface FlagMemory {
+    nearestRoomName: string | undefined
   }
 
   interface CreepMemory {
@@ -31,50 +50,84 @@ declare global {
     targetId: Id<_HasId> | null
     prevAction: string;
     prevTargetId: Id<_HasId> | null
+    flagName: string | null
   }
 
   interface SpawnMemory {
     nextSpawning: boolean;
+    containerId: Id<_HasId> | undefined
+    anotherContainerId: Id<_HasId> | undefined
+    nearestExtensionIds: Array<Id<_HasId>>
   }
 
   // Syntax for adding proprties to `global` (ex "global.log")
   namespace NodeJS {
     interface Global {
       log: any;
+      h: any;
     }
   }
 }
 
+
+global.h = {}
+defineLayouts()
+
+if(!Memory.badRoomNames) Memory.badRoomNames = {}
+
+
 defineRoomPrototypes()
 defineSourcePrototypes()
 defineCreepPrototypes()
+defineStructuresPrototypes()
 defineSpawnPrototypes()
+defineMetrics()
 
 global.log = (some : any) => {
   console.log(JSON.stringify(some))
 }
 
+Memory.sources ||= {}
+
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
+
+// const wrappedExportStats = profiler.registerFN(exportStats, "exportStats")
+// const wrappedProcessSpawn = profiler.registerFN(processSpawn, "processSpawn")
+// const wrappedProcessRoom = profiler.registerFN(processRoom, "processRoom")
+// const wrappedProcessCreep = profiler.registerFN(processCreep, "processCreep")
+
+// profiler.enable()
+
 export const loop = ErrorMapper.wrapLoop(() => {
-  if(Game.time % 10 == 0) console.log(`Current game tick is ${Game.time}`);
+  // profiler.wrap(function() {
+    // if(Game.cpu.bucket == 10000) {
+    //   Game.cpu.generatePixel();
+    // }
+    if(Game.time % 10 == 0) console.log(`Current game tick is ${Game.time}`);
 
-  Object.values(Game.spawns).forEach(spawn => {
-    processSpawn(spawn)
-  })
+    Object.values(Game.creeps).forEach(creep => {
+      processCreep(creep)
+    })
 
-  _.shuffle(Object.values(Game.creeps)).forEach(creep => {
-    processCreep(creep)
-  })
+    Object.values(Game.rooms).forEach(room => {
+      processFlags(room)
+      processRoom(room)
+    })
 
-  Object.values(Game.rooms).forEach(room => {
-    processFlags(room)
-    processRoom(room)
-  })
-  // Automatically delete memory of missing creeps
-  for (const name in Memory.creeps) {
-    if (!(name in Game.creeps)) {
-      delete Memory.creeps[name];
+    // Automatically delete memory of missing creeps
+    for (const name in Memory.creeps) {
+      if (!(name in Game.creeps)) {
+        delete Memory.creeps[name];
+      }
     }
-  }
+    processBuilding()
+
+    Object.values(Game.spawns).forEach(spawn => {
+      processSpawn(spawn)
+    })
+
+    accrueSourcePotential()
+    exportStats()
+  // })
 });
