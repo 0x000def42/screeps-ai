@@ -1,3 +1,12 @@
+const wallTargetHits = 50000
+const rampartTargetHits = 25000
+
+const barrierTargetHits = (structure : AnyStructure) => {
+  if(structure.structureType == STRUCTURE_RAMPART) return rampartTargetHits
+  if(structure.structureType == STRUCTURE_WALL) return wallTargetHits
+  return 0
+}
+
 export default function process(room : Room){
   const hostile = room.find(FIND_HOSTILE_CREEPS)[0]
   if(hostile){
@@ -19,8 +28,8 @@ export default function process(room : Room){
   } else {
 
     const walls : (StructureWall | StructureRampart)[] = room.find(FIND_STRUCTURES, {
-      filter: (structure : StructureWall | StructureRampart) => (structure.hitsMax > structure.hits && (structure.structureType as STRUCTURE_WALL) == STRUCTURE_WALL || structure.structureType == STRUCTURE_RAMPART)
-    })
+      filter: (structure : AnyStructure) => structure.hits < barrierTargetHits(structure)
+    }) as (StructureWall | StructureRampart)[]
 
     let structure : (StructureContainer | StructureRampart | StructureWall) = room.find(FIND_STRUCTURES, {
       filter: (structure : AnyStructure) => (structure.hitsMax > structure.hits && structure.structureType == STRUCTURE_CONTAINER)
