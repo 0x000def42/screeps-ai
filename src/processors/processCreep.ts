@@ -15,6 +15,7 @@ export default function process(creep : Creep) {
   }
 
   const role = roles.filter(role => role.name == creep.memory.role)[0]
+  if(!role) return
 
   // Reset action on finish
   if(creep.memory.action != "idle"){
