@@ -60,6 +60,8 @@ declare global {
     prevTargetId: Id<_HasId> | null
     flagName: string | null
     sourceId: Id<_HasId> | null
+    _trav?: any
+    _travel?: any
   }
 
   interface SpawnMemory {
@@ -114,14 +116,17 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   measure("creeps", () => {
     Object.values(Game.creeps).forEach(creep => {
-      measure(`creep.${creep.memory.role}`, () => processCreep(creep))
+      measure(`creep.${creep.memory.role}`, () =>
+        measure(`room.${creep.room.name}`, () => processCreep(creep)))
     })
   })
 
   measure("rooms", () => {
     Object.values(Game.rooms).forEach(room => {
-      measure("rooms.flags", () => processFlags(room))
-      measure("rooms.defence", () => processRoom(room))
+      measure(`room.${room.name}`, () => {
+        measure("rooms.flags", () => processFlags(room))
+        measure("rooms.defence", () => processRoom(room))
+      })
     })
   })
 
@@ -137,7 +142,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   measure("spawns", () => {
     Object.values(Game.spawns).forEach(spawn => {
-      processSpawn(spawn)
+      measure(`room.${spawn.room.name}`, () => processSpawn(spawn))
     })
   })
 

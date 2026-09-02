@@ -26,6 +26,14 @@ function getCreeps(this: Room){
   return this.find(FIND_MY_CREEPS)
 }
 
+function travelCallback(this: Room){
+  return (roomName : string, costMatrix : CostMatrix) => {
+    if(roomName != this.name) return costMatrix
+    this.ignoredPos.forEach(pos => costMatrix.set(pos.x, pos.y, 255))
+    return costMatrix
+  }
+}
+
 function costCallback(this: Room){
   return (roomName : string, costMatrix : CostMatrix) => {
     this.ignoredPos.forEach(pos => {
@@ -73,7 +81,8 @@ export default function definePrototypes(){
     extensions: { get: getExtensions },
     energy: { get: getEnergy },
     creeps: { get: getCreeps },
-    costCallback: { get: costCallback }
+    costCallback: { get: costCallback },
+    travelCallback: { get: travelCallback }
     // sources: { get: profiler.registerFN(getSources, "Room.sources") as () => any },
     // spawns: { get: profiler.registerFN(getSpawns, "Room.spawns") as () => any },
     // extensions: { get: profiler.registerFN(getExtensions, "Room.extensions") as () => any },

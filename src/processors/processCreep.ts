@@ -8,6 +8,7 @@ roles.forEach(role => {
 
 import actions, {settings} from "actions";
 import { measure } from "../profiler"
+import "utils/Traveler"
 
 export default function process(creep : Creep) {
   if(creep.spawning) return
@@ -69,10 +70,10 @@ export default function process(creep : Creep) {
     if(actResult == OK) return
     if(actResult == ERR_BUSY) return
     if(actResult == ERR_NOT_IN_RANGE) {
-      measure("moveTo", () => creep.moveTo(target, {
-        reusePath: 10,
-        costCallback: creep.room.costCallback,
-      }))
+      const travelOptions : TravelToOptions = { repath: 0.1 }
+      if(creep.room.find(FIND_HOSTILE_CREEPS)[0]) travelOptions.roomCallback = creep.room.travelCallback
+
+      measure("moveTo", () => creep.travelTo(target, travelOptions))
       return
     }
     if((actResult as number) == -6){
