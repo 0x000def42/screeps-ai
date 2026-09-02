@@ -35,7 +35,6 @@ export function recordIntel() {
   })
 }
 
-const minimumExtensionCapacity = 40
 const fullExtensionCapacity = 60
 
 export function layoutCapacity(roomName : string) {
@@ -192,7 +191,6 @@ function bestExpansion(bases : Room[]) : ExpansionPlan | null {
   Object.keys(Memory.intel).forEach(name => {
     const intel = Memory.intel[name]
     if(intel.keeper || intel.owner || !intel.claimable || intel.sources < 2) return
-    if((intel.fit || 0) < minimumExtensionCapacity) return
 
 
     bases.forEach(base => {
@@ -243,7 +241,7 @@ export default function manageExpansion() {
 
   const candidateKnown = Object.keys(Memory.intel).some(name => {
     const intel = Memory.intel[name]
-    return !intel.keeper && !intel.owner && intel.claimable && intel.sources >= 2 && (intel.fit || 0) >= minimumExtensionCapacity
+    return !intel.keeper && !intel.owner && intel.claimable && intel.sources >= 2
   })
 
   if(!candidateKnown){
