@@ -1,4 +1,4 @@
-import layouts, { exitGates } from "buildings/layouts"
+import layouts, { exitGates, internalBorderWalls } from "buildings/layouts"
 
 const checks: any[] = []
 checks.push((room: Room) => {
@@ -68,6 +68,7 @@ export default () => {
     }
 
     if(Game.time % 50 == 0){
+      internalBorderWalls(room).forEach(structure => structure.destroy())
       exitGates(room).forEach(gateway => {
         gateway.gate.lookFor(LOOK_STRUCTURES)
           .filter(structure => structure.structureType == STRUCTURE_WALL)

@@ -162,6 +162,39 @@ const towersLayout = (room : Room) => {
   return positions
 }
 
+const edgeDirections = [LEFT, RIGHT, TOP, BOTTOM]
+
+const internalEdges = (room : Room) => {
+  const owner = room.controller && room.controller.owner ? room.controller.owner.username : null
+  const exits = Game.map.describeExits(room.name) || {}
+  const internal : number[] = []
+
+  edgeDirections.forEach((direction, index) => {
+    const neighbour = (exits as any)[String(direction)]
+    if(!neighbour) return
+    const intel = Memory.intel ? Memory.intel[neighbour] : null
+    if(intel && owner && intel.owner == owner) internal.push(index)
+  })
+
+  return internal
+}
+
+export const internalBorderWalls = (room : Room) => {
+  const internal = internalEdges(room)
+  if(internal.length == 0) return []
+
+  const onInternalEdge = (x : number, y : number) => internal.some(index =>
+    (index == 0 && x <= 2) ||
+    (index == 1 && x >= 47) ||
+    (index == 2 && y <= 2) ||
+    (index == 3 && y >= 47)
+  )
+
+  return room.find(FIND_STRUCTURES, {
+    filter: structure => structure.structureType == STRUCTURE_WALL && onInternalEdge(structure.pos.x, structure.pos.y)
+  })
+}
+
 const exitEdges = [
   {
     find: FIND_EXIT_LEFT,
@@ -192,9 +225,11 @@ const exitEdges = [
 export const exitGates = (room : Room) => {
   const spawn = room.spawns[0]
   const gates : { gate : RoomPosition, guards : RoomPosition[] }[] = []
+  const internal = internalEdges(room)
   if(!spawn) return gates
 
-  exitEdges.forEach((edge : any) => {
+  exitEdges.forEach((edge : any, index : number) => {
+    if(internal.indexOf(index) >= 0) return
     const tiles = room.find(edge.find) as RoomPosition[]
     if(tiles.length == 0) return
 
@@ -310,7 +345,10 @@ const wallsLayout = (room : Room) => {
     claim(highCap[0], highCap[1], STRUCTURE_WALL)
   }
 
-  wallEdges.forEach(edge => {
+  const internalSides = internalEdges(room)
+
+  wallEdges.forEach((edge, index) => {
+    if(internalSides.indexOf(index) >= 0) return
     let runStart = -1
     for(let i = 0; i <= 50; i++){
       const border = i < 50 ? edge(0, i) : null
