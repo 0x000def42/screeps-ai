@@ -35,7 +35,7 @@ declare global {
     badRoomNames: any
     sources: any
     metrics: { rooms: { [roomName: string]: { [flow: string]: number } } }
-    intel: { [roomName: string]: { sources: number, owner: string | null, claimable: boolean, keeper: boolean, seen: number } }
+    intel: { [roomName: string]: { sources: number, sourcePositions: { x: number, y: number }[], controller: { x: number, y: number } | null, owner: string | null, claimable: boolean, keeper: boolean, fit: number, seen: number } }
     expansion: { room: string, base: string } | null
     scoutTarget: string | null
     gates: { [roomName: string]: { [edgeIndex: string]: number } }

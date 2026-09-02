@@ -1,4 +1,5 @@
 import { barrierTargetHits } from "processors/processRoom"
+import { posByDirections } from "buildings/layouts"
 
 const scoutSearchDepth = 12
 
@@ -9,16 +10,124 @@ export function recordIntel() {
 
   Object.values(Game.rooms).forEach(room => {
     const controller = room.controller
+    const sources = room.find(FIND_SOURCES)
+    const known = Memory.intel[room.name]
+
     Memory.intel[room.name] = {
-      sources: room.find(FIND_SOURCES).length,
+      sources: sources.length,
+      sourcePositions: sources.map(source => ({ x: source.pos.x, y: source.pos.y })),
+      controller: controller ? { x: controller.pos.x, y: controller.pos.y } : null,
       owner: controller && controller.owner ? controller.owner.username : null,
       claimable: !!controller,
       keeper: room.find(FIND_STRUCTURES, {
         filter: structure => structure.structureType == STRUCTURE_KEEPER_LAIR
       }).length > 0,
+      fit: known && known.fit !== undefined ? known.fit : 0,
       seen: Game.time
     }
+
+    if(!known || known.fit === undefined) Memory.intel[room.name].fit = layoutCapacity(room.name)
   })
+}
+
+const minimumExtensionCapacity = 40
+const fullExtensionCapacity = 60
+
+export function layoutCapacity(roomName : string) {
+  const intel = Memory.intel ? Memory.intel[roomName] : null
+  if(!intel || !intel.controller || !intel.sourcePositions || intel.sourcePositions.length < 2) return 0
+
+  const terrain = Game.map.getRoomTerrain(roomName)
+  const rock = (x : number, y : number) => x < 1 || x > 48 || y < 1 || y > 48 || terrain.get(x, y) == TERRAIN_MASK_WALL
+  const controller = new RoomPosition(intel.controller.x, intel.controller.y, roomName)
+  const sources = intel.sourcePositions.map(position => new RoomPosition(position.x, position.y, roomName))
+  const key = (pos : RoomPosition) => pos.x + ":" + pos.y
+
+  const clearAround = (pos : RoomPosition) => {
+    for(let dx = -1; dx <= 1; dx++){
+      for(let dy = -1; dy <= 1; dy++){
+        if(rock(pos.x + dx, pos.y + dy)) return false
+      }
+    }
+    return true
+  }
+
+  let spawn : RoomPosition | null = null
+  let bestScore = 0
+
+  for(let distance = 3; distance <= 4 && !spawn; distance++){
+    for(let dx = -distance; dx <= distance; dx++){
+      for(let dy = -distance; dy <= distance; dy++){
+        if(Math.max(Math.abs(dx), Math.abs(dy)) != distance) continue
+        const x = controller.x + dx
+        const y = controller.y + dy
+        if(x < 4 || x > 45 || y < 4 || y > 45) continue
+
+        const pos = new RoomPosition(x, y, roomName)
+        if(!clearAround(pos)) continue
+
+        const toController = pos.getDirectionTo(controller)
+        const container = posByDirections(pos, [toController])
+        if(rock(container.x, container.y) || container.getRangeTo(controller) > 3) continue
+
+        const another = posByDirections(pos, [((toController + 3) % 8) + 1])
+        if(rock(another.x, another.y)) continue
+        if(sources.filter(source => pos.getRangeTo(source) < 3)[0]) continue
+
+        const score = sources.reduce((total, source) => total + pos.getRangeTo(source), 0)
+        if(!spawn || score < bestScore){
+          spawn = pos
+          bestScore = score
+        }
+      }
+    }
+  }
+
+  if(!spawn) return 0
+
+  const direction = ((spawn.getDirectionTo(controller) + 3) % 8) + 1
+  const posADdir = ((direction + 5) % 8) + 1
+  const posBDir = ((posADdir + 3) % 8) + 1
+  const centerPos = posByDirections(spawn, [direction, direction, direction, direction])
+  const towerBase = posByDirections(spawn, [direction, direction])
+
+  const taken : { [tile : string] : boolean } = {}
+  taken[key(spawn)] = true
+  taken[key(controller)] = true
+  sources.forEach(source => taken[key(source)] = true)
+
+  const towerOffsets = [[], [posADdir], [posBDir], [posADdir, posADdir], [posBDir, posBDir], [posADdir, posADdir, posADdir]]
+  towerOffsets.forEach(offset => taken[key(posByDirections(towerBase, offset.slice()))] = true)
+
+  const branch : any = { A: posADdir, B: posBDir }
+  let queue : any[] = [
+    ['A', posByDirections(centerPos, [posADdir, posADdir])],
+    ['A', posByDirections(centerPos, [direction, posADdir])],
+    ['B', posByDirections(centerPos, [direction, posBDir])],
+    ['B', posByDirections(centerPos, [posBDir, posBDir])],
+    ['A', posByDirections(centerPos, [posADdir, posADdir, posADdir])],
+    ['A', posByDirections(centerPos, [posADdir, direction, direction])],
+    ['B', posByDirections(centerPos, [posBDir, posBDir, posBDir])],
+    ['B', posByDirections(centerPos, [posBDir, direction, direction])]
+  ]
+
+  let fitted = 0
+  while(fitted < fullExtensionCapacity && queue.length > 0){
+    const next : any[] = []
+    queue.forEach((entry : any) => {
+      if(fitted >= fullExtensionCapacity) return
+      const pos = entry[1] as RoomPosition
+      if(pos.x <= 2 || pos.x >= 48 || pos.y <= 2 || pos.y >= 48) return
+      if(!rock(pos.x, pos.y) && !taken[key(pos)]){
+        taken[key(pos)] = true
+        fitted++
+      }
+      next.push([entry[0], posByDirections(pos, [direction, branch[entry[0]]])])
+    })
+    queue = next
+  }
+
+  return fitted
 }
 
 export function readyToExpand(room : Room) {
@@ -78,6 +187,7 @@ function bestExpansion(bases : Room[]) : ExpansionPlan | null {
   Object.keys(Memory.intel).forEach(name => {
     const intel = Memory.intel[name]
     if(intel.keeper || intel.owner || !intel.claimable || intel.sources < 2) return
+    if(intel.fit < minimumExtensionCapacity) return
 
     bases.forEach(base => {
       if(base.name == name) return
@@ -127,7 +237,7 @@ export default function manageExpansion() {
 
   const candidateKnown = Object.keys(Memory.intel).some(name => {
     const intel = Memory.intel[name]
-    return !intel.keeper && !intel.owner && intel.claimable && intel.sources >= 2
+    return !intel.keeper && !intel.owner && intel.claimable && intel.sources >= 2 && intel.fit >= minimumExtensionCapacity
   })
 
   if(!candidateKnown){
