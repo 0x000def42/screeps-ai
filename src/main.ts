@@ -14,6 +14,8 @@ import processRoom from "./processors/processRoom"
 import defineLayouts from "./buildings/check"
 import processBuilding from "buildings/processBuilding";
 import defineMetrics, { accrueSourcePotential } from "./metrics"
+import roles from "./roles"
+import actionRegistry from "./actions"
 import manageExpansion from "./expansion"
 import { measure } from "./profiler"
 import exportStats from "./stats"
@@ -81,6 +83,9 @@ declare global {
 
 
 profiler.enable()
+
+roles.forEach(role => profiler.registerObject(role, `${role.name}Role`))
+Object.values(actionRegistry).forEach((action : any) => profiler.registerObject(action, `${action.name}Action`))
 
 global.h = {}
 defineLayouts()
