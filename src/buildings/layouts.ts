@@ -221,6 +221,38 @@ export const exitGates = (room : Room) => {
   return gates
 }
 
+const firstSpawnLayout = (room : Room) => {
+  const controller = room.controller as StructureController
+  const terrain = Game.map.getRoomTerrain(room.name)
+  const sources = room.find(FIND_SOURCES)
+
+  const clearAround = (x : number, y : number) => {
+    for(let dx = -1; dx <= 1; dx++){
+      for(let dy = -1; dy <= 1; dy++){
+        if(terrain.get(x + dx, y + dy) == TERRAIN_MASK_WALL) return false
+      }
+    }
+    return true
+  }
+
+  let best : { pos : RoomPosition, score : number } | null = null
+
+  for(let y = 4; y < 46; y++){
+    for(let x = 4; x < 46; x++){
+      if(!clearAround(x, y)) continue
+      const pos = new RoomPosition(x, y, room.name)
+      const toController = pos.getRangeTo(controller)
+      if(toController < 3 || toController > 8) continue
+      if(sources.filter(source => pos.getRangeTo(source) < 4)[0]) continue
+      if(pos.lookFor(LOOK_STRUCTURES)[0]) continue
+      const score = toController + sources.reduce((total, source) => total + pos.getRangeTo(source), 0)
+      if(!best || score < best.score) best = { pos, score }
+    }
+  }
+
+  return best ? [{ pos: best.pos, type: STRUCTURE_SPAWN }] : []
+}
+
 const wallEdges = [
   (depth : number, index : number) => [depth, index],
   (depth : number, index : number) => [49 - depth, index],
@@ -296,5 +328,5 @@ const roadsLayout = (room : Room) => {
 }
 
 export default {
-  sourceContainerLayout, roadsLayout, sourceExtensionsLayout, extensions, towersLayout, wallsLayout
+  sourceContainerLayout, roadsLayout, sourceExtensionsLayout, extensions, towersLayout, wallsLayout, firstSpawnLayout
 }

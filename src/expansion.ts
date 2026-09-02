@@ -95,10 +95,11 @@ export default function manageExpansion() {
   recordIntel()
 
   const owned = ownedRooms()
-  if(owned.length >= Game.gcl.level){
-    Memory.expansion = null
-    Memory.scoutTarget = null
-    return
+
+  const unfinished = owned.filter(room => room.find(FIND_MY_SPAWNS).length == 0)[0]
+  if(unfinished && (!Memory.expansion || Memory.expansion.room != unfinished.name)){
+    const base = owned.filter(room => room.find(FIND_MY_SPAWNS).length > 0)[0]
+    if(base) Memory.expansion = { room: unfinished.name, base: base.name }
   }
 
   if(Memory.expansion){
@@ -109,6 +110,12 @@ export default function manageExpansion() {
     }
     return
   }
+  if(owned.length >= Game.gcl.level){
+    Memory.expansion = null
+    Memory.scoutTarget = null
+    return
+  }
+
 
   const bases = owned.filter(readyToExpand)
   if(bases.length == 0){

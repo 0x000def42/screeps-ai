@@ -49,39 +49,33 @@ checks.push((room : Room) => {
 
 const checksLenght = checks.length
 
+function placeSites(room : Room, positions : { pos : { x : number, y : number }, type : BuildableStructureConstant }[]) {
+  positions.forEach(position => {
+    const result = room.createConstructionSite(position.pos.x, position.pos.y, position.type)
+    if(result != OK) console.log(`${room.name}: cannot place ${position.type} at ${position.pos.x},${position.pos.y} -> ${result}`)
+  })
+}
+
 export default () => {
   Object.values(Game.rooms).forEach(room => {
-    if(!room.controller || !room.controller.my || !room.spawns[0]) return
+    if(!room.controller || !room.controller.my) return
+    if(Game.time % 10 != 0) return
+    if(room.find(FIND_CONSTRUCTION_SITES).length > 0) return
 
-    if(Game.time % 10 == 0){
-      if(Game.time % 50 == 0){
-        exitGates(room).forEach(gateway => {
-          gateway.gate.lookFor(LOOK_STRUCTURES)
-            .filter(structure => structure.structureType == STRUCTURE_WALL)
-            .forEach(structure => structure.destroy())
-        })
-      }
-
-      if(room.find(FIND_CONSTRUCTION_SITES).length == 0){
-        const layout = checks[Math.floor(Game.time / 10) % checksLenght](room)
-        if(layout){
-          const layoutPositions = layout(room)
-
-          layoutPositions.forEach((layoutPosition: { pos: { x: number; y: number }; type: BuildableStructureConstant }) => {
-            const result = room.createConstructionSite(layoutPosition.pos.x, layoutPosition.pos.y, layoutPosition.type)
-            if(result != OK) console.log(`${room.name}: cannot place ${layoutPosition.type} at ${layoutPosition.pos.x},${layoutPosition.pos.y} -> ${result}`)
-          })
-        }
-      }
+    if(!room.spawns[0]){
+      placeSites(room, layouts.firstSpawnLayout(room))
+      return
     }
+
+    if(Game.time % 50 == 0){
+      exitGates(room).forEach(gateway => {
+        gateway.gate.lookFor(LOOK_STRUCTURES)
+          .filter(structure => structure.structureType == STRUCTURE_WALL)
+          .forEach(structure => structure.destroy())
+      })
+    }
+
+    const layout = checks[Math.floor(Game.time / 10) % checksLenght](room)
+    if(layout) placeSites(room, layout(room))
   })
-  // global.h.checkLayout = (roomName : string, name : string) => {
-  //   Object.values(Game.flags).filter(f => f.color == COLOR_GREY).forEach(f => f.remove())
-  //   const room = Game.rooms[roomName]
-  //   const layoutPositions = (layouts as any)[name](room)
-  //   let i = 0
-  //   layoutPositions.forEach((pos: { pos: RoomPosition, type: any }) => {
-  //     console.log(room.createFlag(pos.pos, `${pos.type}:${i++}`, COLOR_GREY))
-  //   })
-  // }
 }

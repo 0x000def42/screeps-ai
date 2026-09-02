@@ -357,6 +357,20 @@ const actions = {
       return OK
     }
   },
+  gotoExpansion: {
+    name: "gotoExpansion",
+    targetId: creep => creep.id,
+    canStart: (creep) => !!Memory.expansion && creep.room.name != Memory.expansion.room,
+    isFinish: (creep) => !Memory.expansion || creep.room.name == Memory.expansion.room,
+    act: (creep) => {
+      const expansion = Memory.expansion as { room : string, base : string }
+      const exit = creep.room.findExitTo(expansion.room)
+      if(exit == ERR_NO_PATH || exit == ERR_INVALID_ARGS) return OK
+      const step = creep.pos.findClosestByPath(exit as ExitConstant)
+      if(step) creep.moveTo(step, { reusePath: 10 })
+      return OK
+    }
+  },
   claimExpansion: {
     name: "claimExpansion",
     targetId: creep => creep.id,

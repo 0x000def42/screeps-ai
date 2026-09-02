@@ -54,20 +54,15 @@ roles.push({
   },
   priority: 10,
   size: (room: Room) => {
-    if((room.controller as StructureController).level < 4) return 0
-    if(room.spawns[0].anotherContainer && room.spawns[0].anotherContainer.store[RESOURCE_ENERGY] < 1900) return 0
-    const flag = Object.values(Game.flags).filter(flag => flag.name == "claim")[0]
-    if(flag){
-      if(flag.room && flag.room.controller && flag.room.controller.my){
-        // console.log(`Remote builder lenght: ${Object.values(Game.creeps).filter(creep => creep.memory.role == "remoteBuilder").length}`)
-        return 6 - Object.values(Game.creeps).filter(creep => creep.memory.role == "remoteBuilder").length
-      }
-    }
-    return 0
+    const expansion = Memory.expansion
+    if(!expansion || expansion.base != room.name) return 0
+    const target = Game.rooms[expansion.room]
+    if(!target || !target.controller || !target.controller.my) return 0
+    if(target.find(FIND_MY_SPAWNS).length > 0) return 0
+    return 3 - Object.values(Game.creeps).filter(creep => creep.memory.role == "remoteBuilder").length
   },
   actions: [
-    buildAction(actions.gotoClaim, 0, {closure: (creep : Creep) => !!Game.flags['claim'] && !!Game.flags['claim'].room && !!Game.flags['claim'].room.controller && Game.flags['claim'].room.controller.my}),
-    buildAction(actions.upgrade, 0, {closure: (creep: Creep) => (creep.room.controller as StructureController).ticksToDowngrade < 1000}),
+    buildAction(actions.gotoExpansion, 0),
     buildAction(actions.build, 1),
     buildAction(actions.harvestBalanced, 2),
     buildAction(actions.upgrade, 3)
