@@ -207,6 +207,7 @@ roles.push({
   },
   actions: [
     buildAction(actions.transferToSpawn, 1),
+    buildAction(actions.fillTowers, 2),
     buildAction(actions.transferToHomeExtensions, 3),
     buildAction(actions.withdrawFromAnotherSpawnContainer, 4),
     buildAction(actions.withdrawFromSpawnContainer, 5),

@@ -62,6 +62,24 @@ const sourceExtensionsLayout = (room : Room) => {
   return positions
 }
 
+const towerPositions = (room : Room) => {
+  const spawnPos = room.spawns[0].pos
+  const controller = room.controller as StructureController
+  const direction = ((spawnPos.getDirectionTo(controller.pos.x, controller.pos.y) + 3) % 8) + 1
+  const posADdir = ((direction + 5) % 8) + 1
+  const posBDir = ((posADdir + 3) % 8) + 1
+  const basePos = posByDirections(spawnPos, [direction, direction])
+
+  return [
+    [],
+    [posADdir],
+    [posBDir],
+    [posADdir, posADdir],
+    [posBDir, posBDir],
+    [posADdir, posADdir, posADdir]
+  ].map(offset => posByDirections(basePos, offset.slice()))
+}
+
 const extensions = (room : Room) => {
   const positions : any = []
   const terrain = Game.map.getRoomTerrain(room.name)
@@ -94,8 +112,11 @@ const extensions = (room : Room) => {
 
   const insideBuildableArea = (pos : RoomPosition) => pos.x > 2 && pos.x < 48 && pos.y > 2 && pos.y < 48
 
+  const reservedForTowers = towerPositions(room).map(pos => pos.x + ":" + pos.y)
+
   const freeForExtension = (pos : RoomPosition) => {
     if(terrain.get(pos.x, pos.y) == TERRAIN_MASK_WALL) return false
+    if(reservedForTowers.indexOf(pos.x + ":" + pos.y) >= 0) return false
     if(pos.lookFor(LOOK_CONSTRUCTION_SITES)[0]) return false
     return !pos.lookFor(LOOK_STRUCTURES).filter(s => s.structureType != STRUCTURE_ROAD && s.structureType != STRUCTURE_RAMPART)[0]
   }
@@ -119,6 +140,28 @@ const extensions = (room : Room) => {
 
   return positions
 }
+const towersLayout = (room : Room) => {
+  const positions : any = []
+  const terrain = Game.map.getRoomTerrain(room.name)
+  const controller = room.controller as StructureController
+  const limit = CONTROLLER_STRUCTURES["tower"][controller.level]
+  let built = room.find(FIND_MY_STRUCTURES, {
+    filter: s => s.structureType == STRUCTURE_TOWER
+  }).length
+
+  towerPositions(room).forEach(pos => {
+    if(built >= limit) return
+    if(pos.x <= 2 || pos.x >= 48 || pos.y <= 2 || pos.y >= 48) return
+    if(terrain.get(pos.x, pos.y) == TERRAIN_MASK_WALL) return
+    if(pos.lookFor(LOOK_CONSTRUCTION_SITES)[0]) return
+    if(pos.lookFor(LOOK_STRUCTURES).filter(s => s.structureType != STRUCTURE_ROAD && s.structureType != STRUCTURE_RAMPART)[0]) return
+    positions.push({ pos, type: STRUCTURE_TOWER })
+    built++
+  })
+
+  return positions
+}
+
 // global.h.checkLayout("sim", "roadsLayout")
 const roadsLayout = (room : Room) => {
   const positions : any = []
@@ -135,5 +178,5 @@ const roadsLayout = (room : Room) => {
 }
 
 export default {
-  sourceContainerLayout, roadsLayout, sourceExtensionsLayout, extensions
+  sourceContainerLayout, roadsLayout, sourceExtensionsLayout, extensions, towersLayout
 }

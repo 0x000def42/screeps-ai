@@ -18,6 +18,15 @@ checks.push((room : Room) => {
   return
 })
 
+checks.push((room : Room) => {
+  const controller = room.controller as StructureController
+  const built = room.find(FIND_MY_STRUCTURES, {
+    filter: s => s.structureType == STRUCTURE_TOWER
+  }).length
+  if(built < CONTROLLER_STRUCTURES["tower"][controller.level]) return layouts.towersLayout
+  return
+})
+
 const checksLenght = checks.length
 
 export default () => {
