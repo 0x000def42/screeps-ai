@@ -1,5 +1,11 @@
 import roles from "roles";
 
+const rolesByName : { [name : string] : any } = {}
+roles.forEach(role => {
+  role.actions.sort((a, b) => a.priority - b.priority)
+  rolesByName[role.name] = role
+})
+
 import actions, {settings} from "actions";
 
 export default function process(creep : Creep) {
@@ -14,14 +20,14 @@ export default function process(creep : Creep) {
     }
   }
 
-  const role = roles.filter(role => role.name == creep.memory.role)[0]
+  const role = rolesByName[creep.memory.role]
   if(!role) return
 
   // Reset action on finish
   if(creep.memory.action != "idle"){
     const action = actions[creep.memory.action]
     if(action.isFinish(creep)){
-      if(role.actions.filter(a => a.name == creep.memory.action)[0]?.storePrevAction){
+      if(role.actions.filter((a : any) => a.name == creep.memory.action)[0]?.storePrevAction){
         creep.memory.prevAction = creep.memory.action
         creep.memory.prevTargetId = creep.memory.targetId
       } else {
@@ -35,8 +41,8 @@ export default function process(creep : Creep) {
 
   // Select action and target
   if(creep.memory.action == "idle"){
-    role.actions.sort((a, b) => a.priority - b.priority)
-    .forEach((roleAction) => {
+    role.actions
+    .forEach((roleAction : any) => {
       if(creep.memory.action == "idle"){
         if(roleAction.closure(creep)) {
           const action = actions[roleAction.name]
@@ -63,7 +69,7 @@ export default function process(creep : Creep) {
     if(actResult == ERR_BUSY) return
     if(actResult == ERR_NOT_IN_RANGE) {
       creep.moveTo(target, {
-        reusePath: 2,
+        reusePath: 10,
         costCallback: creep.room.costCallback,
       })
       return

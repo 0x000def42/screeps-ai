@@ -262,4 +262,12 @@ roles.push({
 //   ],
 // })
 
+roles.forEach(role => {
+  profiler.registerObject(role, `${role.name}Role`)
+})
+
+Object.values(actions).forEach(action => {
+  profiler.registerObject(action, `${action.name}Action`)
+})
+
 export default roles;
