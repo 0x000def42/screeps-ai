@@ -64,10 +64,12 @@ const sourceExtensionsLayout = (room : Room) => {
 
 const extensions = (room : Room) => {
   const positions : any = []
+  const terrain = Game.map.getRoomTerrain(room.name)
   const spawnPos = room.spawns[0].pos
   const controller = room.controller as StructureController
   const direction = ((spawnPos.getDirectionTo(controller.pos.x, controller.pos.y) + 3) % 8) + 1
-  let centerPos = posByDirections(spawnPos, [direction, direction, direction, direction])
+  const centerPos = posByDirections(spawnPos, [direction, direction, direction, direction])
+  const limit = CONTROLLER_STRUCTURES["extension"][controller.level]
   let i = room.find(FIND_MY_STRUCTURES, {
     filter: s => s.structureType == STRUCTURE_EXTENSION
   }).length
@@ -90,40 +92,33 @@ const extensions = (room : Room) => {
     'B' : posBDir
   } as any
 
+  const insideBuildableArea = (pos : RoomPosition) => pos.x > 2 && pos.x < 48 && pos.y > 2 && pos.y < 48
+
+  const freeForExtension = (pos : RoomPosition) => {
+    if(terrain.get(pos.x, pos.y) == TERRAIN_MASK_WALL) return false
+    if(pos.lookFor(LOOK_CONSTRUCTION_SITES)[0]) return false
+    return !pos.lookFor(LOOK_STRUCTURES).filter(s => s.structureType != STRUCTURE_ROAD && s.structureType != STRUCTURE_RAMPART)[0]
+  }
+
   let nextPoses = initialPoses
   let nextNextPoses : any
-  while(i < CONTROLLER_STRUCTURES["extension"][controller.level]){
+  while(i < limit && nextPoses.length > 0){
     nextNextPoses = []
     nextPoses.forEach((nextPos : any) => {
-      if(i < CONTROLLER_STRUCTURES["extension"][controller.level]) {
-        if(nextPos[1].y > 2 && nextPos[1].y < 48 && nextPos[1].x > 2 && nextPos[1].x < 48){
-          if(!nextPos[1].lookFor(LOOK_STRUCTURES).filter((l : any) => l.structureType == STRUCTURE_EXTENSION)[0]){
-            positions.push({
-              pos: nextPos[1], type: STRUCTURE_EXTENSION
-            })
-            i++;
-          }
-          console.log(nextPos[1])
-          nextNextPoses.push(
-            [
-              nextPos[0],
-              posByDirections(
-                nextPos[1],
-                [direction, directions[nextPos[0]]]
-              )
-            ]
-          )
-        }
+      if(i >= limit) return
+      const pos = nextPos[1] as RoomPosition
+      if(!insideBuildableArea(pos)) return
+      if(freeForExtension(pos)){
+        positions.push({ pos, type: STRUCTURE_EXTENSION })
+        i++
       }
-
+      nextNextPoses.push([nextPos[0], posByDirections(pos, [direction, directions[nextPos[0]]])])
     })
     nextPoses = nextNextPoses
   }
 
-
   return positions
 }
-
 // global.h.checkLayout("sim", "roadsLayout")
 const roadsLayout = (room : Room) => {
   const positions : any = []

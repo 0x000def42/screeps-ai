@@ -29,7 +29,8 @@ export default () => {
           const layoutPositions = layout(room)
 
           layoutPositions.forEach((layoutPosition: { pos: { x: number; y: number }; type: BuildableStructureConstant }) => {
-            room.createConstructionSite(layoutPosition.pos.x, layoutPosition.pos.y, layoutPosition.type)
+            const result = room.createConstructionSite(layoutPosition.pos.x, layoutPosition.pos.y, layoutPosition.type)
+            if(result != OK) console.log(`${room.name}: cannot place ${layoutPosition.type} at ${layoutPosition.pos.x},${layoutPosition.pos.y} -> ${result}`)
           })
         }
       }
