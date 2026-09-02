@@ -38,6 +38,11 @@ const actions = {
   harvestBalanced: {
     name: "harvestBalanced",
     targetId: creep => {
+      if(creep.memory.prevAction == "harvestBalanced" && creep.memory.prevTargetId){
+        const remembered = Game.getObjectById(creep.memory.prevTargetId) as Source
+        if(remembered && remembered.energy > 0) return remembered.id
+      }
+
       return creep.pos.findClosestByPath(FIND_SOURCES_ACTIVE, {
         filter: (source) => {
           return source.spots.length > source.creeps.length &&

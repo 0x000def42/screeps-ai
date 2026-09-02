@@ -33,12 +33,18 @@ export default function definePrototypes(){
     spots: {
       get() : RoomPosition[] {
         if(this._spots) return this._spots
+        const cached = (this as Source).memory.spots
+        if(cached){
+          this._spots = cached.map((spot : any) => new RoomPosition(spot.x, spot.y, (this as Source).room.name))
+          return this._spots
+        }
         const source = (this as Source)
         const room = source.room
         const positions = room.lookAtArea(source.pos.y - 1, source.pos.x - 1, source.pos.y + 1, source.pos.x + 1, true)
                               .filter((pos) => pos.terrain)
                               .filter((pos) => pos.terrain != "wall" )
         this._spots ||= positions.map(pos => new RoomPosition(pos.x, pos.y, room.name))
+        source.memory.spots = this._spots.map((spot : RoomPosition) => ({ x: spot.x, y: spot.y }))
         return this._spots
       }
     },
