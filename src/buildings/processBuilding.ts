@@ -68,11 +68,21 @@ export default () => {
     }
 
     if(Game.time % 50 == 0){
-      exitGates(room).forEach(gateway => {
+      const gateways = exitGates(room)
+      const gateTiles = gateways.map(gateway => gateway.gate.x + ":" + gateway.gate.y)
+
+      gateways.forEach(gateway => {
         gateway.gate.lookFor(LOOK_STRUCTURES)
           .filter(structure => structure.structureType == STRUCTURE_WALL)
           .forEach(structure => structure.destroy())
       })
+
+      room.find(FIND_MY_STRUCTURES, {
+        filter: structure => structure.structureType == STRUCTURE_RAMPART
+      }).filter(structure => {
+        const nearEdge = structure.pos.x <= 3 || structure.pos.x >= 46 || structure.pos.y <= 3 || structure.pos.y >= 46
+        return nearEdge && gateTiles.indexOf(structure.pos.x + ":" + structure.pos.y) < 0
+      }).forEach(structure => structure.destroy())
     }
 
     const layout = checks[Math.floor(Game.time / 10) % checksLenght](room)

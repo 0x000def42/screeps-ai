@@ -229,7 +229,7 @@ const exitEdges = [
 
 export const exitGates = (room : Room) => {
   const spawn = room.spawns[0]
-  const gates : { gate : RoomPosition, guards : RoomPosition[] }[] = []
+  const gates : { gate : RoomPosition }[] = []
   if(!spawn) return gates
 
   const terrain = Game.map.getRoomTerrain(room.name)
@@ -265,11 +265,7 @@ export const exitGates = (room : Room) => {
 
     Memory.gates[room.name][String(index)] = gateIndex
 
-    const guards = [gateIndex - 1, gateIndex, gateIndex + 1]
-      .filter(position => position > 0 && position < 49)
-      .map(position => edge.at(room, 3, position) as RoomPosition)
-
-    gates.push({ gate: edge.at(room, 2, gateIndex) as RoomPosition, guards })
+    gates.push({ gate: edge.at(room, 2, gateIndex) as RoomPosition })
   })
 
   return gates
@@ -377,7 +373,7 @@ const wallsLayout = (room : Room) => {
     }
   })
 
-  gateways.forEach(gateway => gateway.guards.forEach(pos => claim(pos.x, pos.y, STRUCTURE_RAMPART)))
+  gateways.forEach(gateway => claim(gateway.gate.x, gateway.gate.y, STRUCTURE_RAMPART))
 
   return positions
 }
