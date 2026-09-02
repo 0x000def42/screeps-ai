@@ -59,7 +59,7 @@ roles.push({
     const target = Game.rooms[expansion.room]
     if(!target || !target.controller || !target.controller.my) return 0
     if(target.find(FIND_MY_SPAWNS).length > 0) return 0
-    return 3 - Object.values(Game.creeps).filter(creep => creep.memory.role == "remoteBuilder").length
+    return 4 - Object.values(Game.creeps).filter(creep => creep.memory.role == "remoteBuilder").length
   },
   actions: [
     buildAction(actions.gotoExpansion, 0),

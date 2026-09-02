@@ -106,6 +106,14 @@ export default function manageExpansion() {
     const claimed = Game.rooms[Memory.expansion.room]
     if(claimed && claimed.controller && claimed.controller.my && claimed.find(FIND_MY_SPAWNS).length > 0){
       console.log(`expansion into ${Memory.expansion.room} finished`)
+      Object.values(Game.creeps).forEach(creep => {
+        if(creep.memory.role != "remoteBuilder") return
+        creep.memory.role = "worker"
+        creep.memory.action = "idle"
+        creep.memory.targetId = null
+        creep.memory.prevAction = "idle"
+        creep.memory.prevTargetId = null
+      })
       Memory.expansion = null
     }
     return
