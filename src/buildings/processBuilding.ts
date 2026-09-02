@@ -20,6 +20,11 @@ checks.push((room : Room) => {
 
 checks.push((room : Room) => {
   const controller = room.controller as StructureController
+  const extensions = room.find(FIND_MY_STRUCTURES, {
+    filter: s => s.structureType == STRUCTURE_EXTENSION
+  }).length
+  if(extensions < CONTROLLER_STRUCTURES["extension"][controller.level]) return
+
   const built = room.find(FIND_MY_STRUCTURES, {
     filter: s => s.structureType == STRUCTURE_TOWER
   }).length
