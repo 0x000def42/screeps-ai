@@ -1,6 +1,7 @@
 type EnergyFlow = "harvested" | "upgraded" | "built" | "repaired" | "spawned" | "towers"
 
 const sinkFlows: EnergyFlow[] = ["upgraded", "built", "repaired", "spawned", "towers"]
+const rolesRecycledOnSpawn = ["suicider"]
 
 function flowsOf(roomName: string) {
   Memory.metrics ||= { rooms: {} }
@@ -69,7 +70,8 @@ function instrumentSpawn() {
     opts?: SpawnOptions
   ) {
     const result = spawnCreep.call(this, body, name, opts)
-    if (result == OK && !(opts && opts.dryRun)) {
+    const role = opts && opts.memory ? opts.memory.role : ""
+    if (result == OK && !(opts && opts.dryRun) && rolesRecycledOnSpawn.indexOf(role) < 0) {
       track(this.room.name, "spawned", body.reduce((total, part) => total + BODYPART_COST[part], 0))
     }
     return result
