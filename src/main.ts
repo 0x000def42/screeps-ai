@@ -57,6 +57,7 @@ declare global {
     prevAction: string;
     prevTargetId: Id<_HasId> | null
     flagName: string | null
+    sourceId: Id<_HasId> | null
   }
 
   interface SpawnMemory {

@@ -17,7 +17,8 @@ const defaultMemory = {
   prevAction: 'idle',
   targetId: null,
   prevTargetId: null,
-  flagName: null
+  flagName: null,
+  sourceId: null
 }
 
 function processNextSpawning(spawn : StructureSpawn, nextSpawning : any){

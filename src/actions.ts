@@ -19,11 +19,19 @@ export const settings : any = {
   exits: {}
 }
 
+let claimedTargetsTick = -1
+let claimedTargetsCache : { [id : string] : boolean } = {}
+
 const claimedTargets = () => {
+  if(claimedTargetsTick == Game.time) return claimedTargetsCache
+
   const claimed : { [id : string] : boolean } = {}
   Object.values(Game.creeps).forEach(creep => {
     if(creep.memory.targetId) claimed[creep.memory.targetId as string] = true
   })
+  claimedTargetsTick = Game.time
+  claimedTargetsCache = claimed
+
   return claimed
 }
 
@@ -38,18 +46,19 @@ const actions = {
   harvestBalanced: {
     name: "harvestBalanced",
     targetId: creep => {
-      if(creep.memory.prevAction == "harvestBalanced" && creep.memory.prevTargetId){
-        const remembered = Game.getObjectById(creep.memory.prevTargetId) as Source
-        if(remembered && remembered.energy > 0) return remembered.id
-      }
+      const remembered = creep.memory.sourceId ? Game.getObjectById(creep.memory.sourceId) as Source : null
+      if(remembered && remembered.energy > 0) return remembered.id
 
-      return creep.pos.findClosestByPath(FIND_SOURCES_ACTIVE, {
+      const found = creep.pos.findClosestByPath(FIND_SOURCES_ACTIVE, {
         filter: (source) => {
           return source.spots.length > source.creeps.length &&
                  source.workBodyparts < 6 &&
                  !source.pos.findInRange(FIND_HOSTILE_CREEPS, 3)[0]
         }
-      })?.id
+      })
+
+      creep.memory.sourceId = found ? found.id : null
+      return found?.id
     },
     canStart: creepNotFull,
     isFinish: creepFull,
@@ -80,7 +89,7 @@ const actions = {
         filter: (source) => {
           return source.container && source.container.carryBodyparts * 50 < source.container.store[RESOURCE_ENERGY] && creep.body.filter(b => b.type == CARRY).length * 50 <= source.container.store[RESOURCE_ENERGY]
         }
-      }).sort((a,b) => (a.container as StructureContainer).pos.findPathTo(creep).length - (a.container as StructureContainer).pos.findPathTo(creep).length)[0]?.container?.id
+      }).sort((a, b) => creep.pos.getRangeTo(a.container as StructureContainer) - creep.pos.getRangeTo(b.container as StructureContainer))[0]?.container?.id
     },
     canStart: creepNotFull,
     isFinish: (c) => creepFull(c) || !c.target,
@@ -247,9 +256,12 @@ const actions = {
     name: "repairBarrier",
     targetId: creep => {
       const claimed = claimedTargets()
-      return creep.room.find(FIND_STRUCTURES, {
+      const barrier = creep.room.find(FIND_STRUCTURES, {
         filter: structure => structure.hits < barrierTargetHits(structure) && !claimed[structure.id]
       }).sort((a, b) => a.hits - b.hits)[0]?.id
+
+      if(barrier) claimed[barrier] = true
+      return barrier
     },
     canStart: creepNotEmpty,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
@@ -275,9 +287,12 @@ const actions = {
     name: "buildWalls",
     targetId: creep => {
       const claimed = claimedTargets()
-      return creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
+      const site = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
         filter: (site) => (site.structureType == STRUCTURE_WALL || site.structureType == STRUCTURE_RAMPART) && !claimed[site.id]
       })?.id
+
+      if(site) claimed[site] = true
+      return site
     },
     canStart: creepNotEmpty,
     isFinish: (creep) => !creep.target || creepEmpty(creep),
