@@ -1,4 +1,6 @@
 export function measure<T>(section : string, body : () => T) : T {
+  if(!Memory.profiling) return body()
+
   const started = Game.cpu.getUsed()
   const result = body()
 
