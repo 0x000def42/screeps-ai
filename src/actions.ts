@@ -238,11 +238,7 @@ const actions = {
       }).sort((a, b) => a.hits - b.hits)[0]?.id
     },
     canStart: creepNotEmpty,
-    isFinish: (creep) => {
-      if(!creep.target) return true
-      const target = creep.target as AnyStructure
-      return creepEmpty(creep) || target.hits >= barrierTargetHits(target)
-    },
+    isFinish: (creep) => !creep.target || creepEmpty(creep),
     act: (creep, target : AnyStructure) => creep.repair(target)
   },
   repairNear: {

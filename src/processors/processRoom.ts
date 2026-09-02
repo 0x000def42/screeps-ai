@@ -25,17 +25,5 @@ export default function process(room : Room){
     room.find(FIND_MY_STRUCTURES, {
       filter: (structure) => structure.structureType == STRUCTURE_TOWER
     }).forEach(tower => (tower as StructureTower).attack(hostile))
-  } else {
-
-    let structure : (StructureContainer | StructureRampart | StructureWall) = room.find(FIND_STRUCTURES, {
-      filter: (structure : AnyStructure) => (structure.hitsMax > structure.hits && structure.structureType == STRUCTURE_CONTAINER)
-    })[0] as (StructureContainer | StructureRampart | StructureWall)
-
-
-    if(structure){
-      room.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => structure.structureType == STRUCTURE_TOWER && structure.store[RESOURCE_ENERGY] > 800
-      }).forEach(tower => (tower as StructureTower).repair(structure))
-    }
   }
 }
