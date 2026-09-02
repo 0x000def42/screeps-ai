@@ -172,7 +172,7 @@ const wallEdges = [
 const wallsLayout = (room : Room) => {
   const positions : any = []
   const terrain = Game.map.getRoomTerrain(room.name)
-  const batchLimit = 10
+  const batchLimit = MAX_CONSTRUCTION_SITES - room.find(FIND_MY_CONSTRUCTION_SITES).length
 
   const isRock = (x : number, y : number) => terrain.get(x, y) == TERRAIN_MASK_WALL
 
