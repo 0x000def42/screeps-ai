@@ -14,12 +14,9 @@ import processRoom from "./processors/processRoom"
 import defineLayouts from "./buildings/check"
 import processBuilding from "buildings/processBuilding";
 import defineMetrics, { accrueSourcePotential } from "./metrics"
-import roles from "./roles"
-import actionRegistry from "./actions"
 import manageExpansion from "./expansion"
 import { measure } from "./profiler"
 import exportStats from "./stats"
-import profiler from "screeps-profiler"
 
 
 declare global {
@@ -82,10 +79,6 @@ declare global {
 }
 
 
-profiler.enable()
-
-roles.forEach(role => profiler.registerObject(role, `${role.name}Role`))
-Object.values(actionRegistry).forEach((action : any) => profiler.registerObject(action, `${action.name}Action`))
 
 global.h = {}
 defineLayouts()
@@ -117,7 +110,6 @@ Memory.sources ||= {}
 // profiler.enable()
 
 export const loop = ErrorMapper.wrapLoop(() => {
-  profiler.wrap(() => {
   if(Game.time % 10 == 0) console.log(`Current game tick is ${Game.time}`);
 
   measure("creeps", () => {
@@ -153,17 +145,4 @@ export const loop = ErrorMapper.wrapLoop(() => {
   measure("sourcePotential", () => accrueSourcePotential())
   measure("stats", () => exportStats())
 
-    if(Memory.profileFor && !Memory.profileUntil){
-      Memory.profileUntil = Game.time + Memory.profileFor
-      ;(Game as any).profiler.profile(Memory.profileFor)
-      console.log(`profiling for ${Memory.profileFor} ticks`)
-    }
-
-    if(Memory.profileUntil && Game.time > Memory.profileUntil){
-      Memory.profileReport = (Game as any).profiler.output(150)
-      Memory.profileFor = null
-      Memory.profileUntil = null
-      console.log(`profiling done`)
-    }
-  })
 });

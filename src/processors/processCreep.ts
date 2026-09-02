@@ -7,6 +7,7 @@ roles.forEach(role => {
 })
 
 import actions, {settings} from "actions";
+import { measure } from "../profiler"
 
 export default function process(creep : Creep) {
   if(creep.spawning) return
@@ -46,7 +47,7 @@ export default function process(creep : Creep) {
       if(creep.memory.action == "idle"){
         if(roleAction.closure(creep)) {
           const action = actions[roleAction.name]
-          const targetId = action.targetId(creep)
+          const targetId = measure(`target.${roleAction.name}`, () => action.targetId(creep))
           if(targetId){
             const canStart = action.canStart(creep)
             if(canStart) {
@@ -64,14 +65,14 @@ export default function process(creep : Creep) {
     const action = actions[creep.memory.action]
     const targetId = creep.memory.targetId as Id<_HasId>
     const target = Game.getObjectById(targetId) as any
-    const actResult = action.act(creep, target)
+    const actResult = measure(`act.${creep.memory.action}`, () => action.act(creep, target))
     if(actResult == OK) return
     if(actResult == ERR_BUSY) return
     if(actResult == ERR_NOT_IN_RANGE) {
-      creep.moveTo(target, {
+      measure("moveTo", () => creep.moveTo(target, {
         reusePath: 10,
         costCallback: creep.room.costCallback,
-      })
+      }))
       return
     }
     if((actResult as number) == -6){
