@@ -112,11 +112,11 @@ const extensions = (room : Room) => {
 
   const insideBuildableArea = (pos : RoomPosition) => pos.x > 2 && pos.x < 48 && pos.y > 2 && pos.y < 48
 
-  const reservedForTowers = towerPositions(room).map(pos => pos.x + ":" + pos.y)
+  const reserved = towerPositions(room).concat(exitGates(room).map(gateway => gateway.gate)).map(pos => pos.x + ":" + pos.y)
 
   const freeForExtension = (pos : RoomPosition) => {
     if(terrain.get(pos.x, pos.y) == TERRAIN_MASK_WALL) return false
-    if(reservedForTowers.indexOf(pos.x + ":" + pos.y) >= 0) return false
+    if(reserved.indexOf(pos.x + ":" + pos.y) >= 0) return false
     if(pos.lookFor(LOOK_CONSTRUCTION_SITES)[0]) return false
     return !pos.lookFor(LOOK_STRUCTURES).filter(s => s.structureType != STRUCTURE_ROAD && s.structureType != STRUCTURE_RAMPART)[0]
   }

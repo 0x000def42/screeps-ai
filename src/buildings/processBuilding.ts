@@ -73,7 +73,7 @@ export default () => {
 
       gateways.forEach(gateway => {
         gateway.gate.lookFor(LOOK_STRUCTURES)
-          .filter(structure => structure.structureType == STRUCTURE_WALL)
+          .filter(structure => structure.structureType != STRUCTURE_RAMPART && structure.structureType != STRUCTURE_ROAD)
           .forEach(structure => structure.destroy())
       })
 
