@@ -162,42 +162,63 @@ const towersLayout = (room : Room) => {
   return positions
 }
 
-export const exitGate = (room : Room) => {
+const exitEdges = [
+  {
+    find: FIND_EXIT_LEFT,
+    depthOf: (x : number, _y : number) => x,
+    indexOf: (_x : number, y : number) => y,
+    at: (room : Room, depth : number, index : number) => new RoomPosition(depth, index, room.name)
+  },
+  {
+    find: FIND_EXIT_RIGHT,
+    depthOf: (x : number, _y : number) => 49 - x,
+    indexOf: (_x : number, y : number) => y,
+    at: (room : Room, depth : number, index : number) => new RoomPosition(49 - depth, index, room.name)
+  },
+  {
+    find: FIND_EXIT_TOP,
+    depthOf: (_x : number, y : number) => y,
+    indexOf: (x : number, _y : number) => x,
+    at: (room : Room, depth : number, index : number) => new RoomPosition(index, depth, room.name)
+  },
+  {
+    find: FIND_EXIT_BOTTOM,
+    depthOf: (_x : number, y : number) => 49 - y,
+    indexOf: (x : number, _y : number) => x,
+    at: (room : Room, depth : number, index : number) => new RoomPosition(index, 49 - depth, room.name)
+  }
+] as any
+
+export const exitGates = (room : Room) => {
   const spawn = room.spawns[0]
-  if(!spawn) return null
+  const gates : { gate : RoomPosition, guards : RoomPosition[] }[] = []
+  if(!spawn) return gates
 
-  const exit = spawn.pos.findClosestByPath(FIND_EXIT, { ignoreDestructibleStructures: true, ignoreCreeps: true })
-  if(!exit) return null
+  exitEdges.forEach((edge : any) => {
+    const tiles = room.find(edge.find) as RoomPosition[]
+    if(tiles.length == 0) return
 
-  const path = room.findPath(spawn.pos, exit, { ignoreDestructibleStructures: true, ignoreCreeps: true })
-  if(path.length == 0) return null
+    const exit = spawn.pos.findClosestByPath(tiles, { ignoreDestructibleStructures: true, ignoreCreeps: true })
+    if(!exit) return
 
-  const onLeft = exit.x == 0
-  const onRight = exit.x == 49
-  const onTop = exit.y == 0
-  const vertical = onLeft || onRight
+    const path = room.findPath(spawn.pos, exit, { ignoreDestructibleStructures: true, ignoreCreeps: true })
+    if(path.length == 0) return
 
-  const depthOf = (x : number, y : number) => onLeft ? x : onRight ? 49 - x : onTop ? y : 49 - y
-  const indexOf = (x : number, y : number) => vertical ? y : x
-  const posAt = (depth : number, index : number) => {
-    if(onLeft) return new RoomPosition(depth, index, room.name)
-    if(onRight) return new RoomPosition(49 - depth, index, room.name)
-    if(onTop) return new RoomPosition(index, depth, room.name)
-    return new RoomPosition(index, 49 - depth, room.name)
-  }
+    let gate : RoomPosition | null = null
+    for(let step = path.length - 1; step >= 0 && !gate; step--){
+      if(edge.depthOf(path[step].x, path[step].y) == 2) gate = new RoomPosition(path[step].x, path[step].y, room.name)
+    }
+    if(!gate) return
 
-  let gate : RoomPosition | null = null
-  for(let step = path.length - 1; step >= 0 && !gate; step--){
-    if(depthOf(path[step].x, path[step].y) == 2) gate = new RoomPosition(path[step].x, path[step].y, room.name)
-  }
-  if(!gate) return null
+    const gateIndex = edge.indexOf(gate.x, gate.y)
+    const guards = [gateIndex - 1, gateIndex, gateIndex + 1]
+      .filter(index => index > 0 && index < 49)
+      .map(index => edge.at(room, 3, index) as RoomPosition)
 
-  const gateIndex = indexOf(gate.x, gate.y)
-  const guards = [gateIndex - 1, gateIndex, gateIndex + 1]
-    .filter(index => index > 0 && index < 49)
-    .map(index => posAt(3, index))
+    gates.push({ gate, guards })
+  })
 
-  return { gate, guards }
+  return gates
 }
 
 const wallEdges = [
@@ -214,8 +235,8 @@ const wallsLayout = (room : Room) => {
 
   const isRock = (x : number, y : number) => terrain.get(x, y) == TERRAIN_MASK_WALL
 
-  const gateway = exitGate(room)
-  const isGate = (x : number, y : number) => !!gateway && gateway.gate.x == x && gateway.gate.y == y
+  const gateways = exitGates(room)
+  const isGate = (x : number, y : number) => !!gateways.find(gateway => gateway.gate.x == x && gateway.gate.y == y)
 
   const claim = (x : number, y : number, type : BuildableStructureConstant) => {
     if(positions.length >= batchLimit) return
@@ -254,7 +275,7 @@ const wallsLayout = (room : Room) => {
     }
   })
 
-  if(gateway) gateway.guards.forEach(pos => claim(pos.x, pos.y, STRUCTURE_RAMPART))
+  gateways.forEach(gateway => gateway.guards.forEach(pos => claim(pos.x, pos.y, STRUCTURE_RAMPART)))
 
   return positions
 }

@@ -1,4 +1,4 @@
-import layouts, { exitGate } from "buildings/layouts"
+import layouts, { exitGates } from "buildings/layouts"
 
 const checks: any[] = []
 checks.push((room: Room) => {
@@ -52,11 +52,12 @@ const checksLenght = checks.length
 export default () => {
   Object.values(Game.rooms).forEach(room => {
     if(Game.time % 10 == 0){
-      const gateway = exitGate(room)
-      if(gateway){
-        gateway.gate.lookFor(LOOK_STRUCTURES)
-          .filter(structure => structure.structureType == STRUCTURE_WALL)
-          .forEach(structure => structure.destroy())
+      if(Game.time % 50 == 0){
+        exitGates(room).forEach(gateway => {
+          gateway.gate.lookFor(LOOK_STRUCTURES)
+            .filter(structure => structure.structureType == STRUCTURE_WALL)
+            .forEach(structure => structure.destroy())
+        })
       }
 
       if(room.find(FIND_CONSTRUCTION_SITES).length == 0){
