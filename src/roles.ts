@@ -40,7 +40,8 @@ roles.push({
     return 1 - Object.values(Game.creeps).filter(creep => creep.memory.role == "scout").length
   },
   actions: [
-    buildAction(actions.scoutRoom, 0)
+    buildAction(actions.scoutRoom, 0),
+    buildAction(actions.leaveBorder, 1)
   ]
 })
 

@@ -357,6 +357,16 @@ const actions = {
       return OK
     }
   },
+  leaveBorder: {
+    name: "leaveBorder",
+    targetId: creep => creep.id,
+    canStart: (creep) => creep.pos.x == 0 || creep.pos.x == 49 || creep.pos.y == 0 || creep.pos.y == 49,
+    isFinish: (creep) => creep.pos.x > 0 && creep.pos.x < 49 && creep.pos.y > 0 && creep.pos.y < 49,
+    act: (creep) => {
+      creep.moveTo(new RoomPosition(25, 25, creep.room.name), { reusePath: 5 })
+      return OK
+    }
+  },
   scoutRoom: {
     name: "scoutRoom",
     targetId: creep => creep.id,
