@@ -226,27 +226,43 @@ const firstSpawnLayout = (room : Room) => {
   const terrain = Game.map.getRoomTerrain(room.name)
   const sources = room.find(FIND_SOURCES)
 
-  const clearAround = (x : number, y : number) => {
+  const rock = (x : number, y : number) => terrain.get(x, y) == TERRAIN_MASK_WALL
+
+  const clearAround = (pos : RoomPosition) => {
     for(let dx = -1; dx <= 1; dx++){
       for(let dy = -1; dy <= 1; dy++){
-        if(terrain.get(x + dx, y + dy) == TERRAIN_MASK_WALL) return false
+        if(rock(pos.x + dx, pos.y + dy)) return false
       }
     }
     return true
   }
 
+  const upgradeSpotReady = (pos : RoomPosition) => {
+    const toController = pos.getDirectionTo(controller.pos)
+    const container = posByDirections(pos, [toController])
+    if(rock(container.x, container.y)) return false
+    if(container.getRangeTo(controller) > 3) return false
+    const anotherContainer = posByDirections(pos, [((toController + 3) % 8) + 1])
+    return !rock(anotherContainer.x, anotherContainer.y)
+  }
+
   let best : { pos : RoomPosition, score : number } | null = null
 
-  for(let y = 4; y < 46; y++){
-    for(let x = 4; x < 46; x++){
-      if(!clearAround(x, y)) continue
-      const pos = new RoomPosition(x, y, room.name)
-      const toController = pos.getRangeTo(controller)
-      if(toController < 3 || toController > 8) continue
-      if(sources.filter(source => pos.getRangeTo(source) < 4)[0]) continue
-      if(pos.lookFor(LOOK_STRUCTURES)[0]) continue
-      const score = toController + sources.reduce((total, source) => total + pos.getRangeTo(source), 0)
-      if(!best || score < best.score) best = { pos, score }
+  for(let distance = 3; distance <= 4 && !best; distance++){
+    for(let dx = -distance; dx <= distance; dx++){
+      for(let dy = -distance; dy <= distance; dy++){
+        if(Math.max(Math.abs(dx), Math.abs(dy)) != distance) continue
+        const x = controller.pos.x + dx
+        const y = controller.pos.y + dy
+        if(x < 4 || x > 45 || y < 4 || y > 45) continue
+        const pos = new RoomPosition(x, y, room.name)
+        if(!clearAround(pos)) continue
+        if(!upgradeSpotReady(pos)) continue
+        if(sources.filter(source => pos.getRangeTo(source) < 3)[0]) continue
+        if(pos.lookFor(LOOK_STRUCTURES)[0]) continue
+        const score = sources.reduce((total, source) => total + pos.getRangeTo(source), 0)
+        if(!best || score < best.score) best = { pos, score }
+      }
     }
   }
 
