@@ -1,4 +1,4 @@
-const wallTargetHits = 50000
+const wallTargetHits = 10000
 const rampartTargetHits = 25000
 
 const barrierTargetHits = (structure : AnyStructure) => {
