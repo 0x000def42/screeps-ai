@@ -38,6 +38,7 @@ declare global {
     intel: { [roomName: string]: { sources: number, owner: string | null, claimable: boolean, keeper: boolean, seen: number } }
     expansion: { room: string, base: string } | null
     scoutTarget: string | null
+    gates: { [roomName: string]: { [edgeIndex: string]: number } }
   }
 
   interface RoomMemory {

@@ -179,20 +179,25 @@ const internalEdges = (room : Room) => {
   return internal
 }
 
-export const internalBorderWalls = (room : Room) => {
-  const internal = internalEdges(room)
-  if(internal.length == 0) return []
+const oppositeEdge = [1, 0, 3, 2]
 
-  const onInternalEdge = (x : number, y : number) => internal.some(index =>
-    (index == 0 && x <= 2) ||
-    (index == 1 && x >= 47) ||
-    (index == 2 && y <= 2) ||
-    (index == 3 && y >= 47)
-  )
+const neighbourGateIndex = (room : Room, edgeIndex : number) => {
+  const owner = room.controller && room.controller.owner ? room.controller.owner.username : null
+  if(!owner) return null
 
-  return room.find(FIND_STRUCTURES, {
-    filter: structure => structure.structureType == STRUCTURE_WALL && onInternalEdge(structure.pos.x, structure.pos.y)
-  })
+  const exits = Game.map.describeExits(room.name) || {}
+  const neighbour = (exits as any)[String(edgeDirections[edgeIndex])]
+  if(!neighbour) return null
+
+  const intel = Memory.intel ? Memory.intel[neighbour] : null
+  if(!intel || intel.owner != owner) return null
+  if(room.name < neighbour) return null
+
+  const gates = Memory.gates ? Memory.gates[neighbour] : null
+  if(!gates) return null
+
+  const index = gates[String(oppositeEdge[edgeIndex])]
+  return index === undefined ? null : index
 }
 
 const exitEdges = [
@@ -225,32 +230,46 @@ const exitEdges = [
 export const exitGates = (room : Room) => {
   const spawn = room.spawns[0]
   const gates : { gate : RoomPosition, guards : RoomPosition[] }[] = []
-  const internal = internalEdges(room)
   if(!spawn) return gates
 
+  const terrain = Game.map.getRoomTerrain(room.name)
+  Memory.gates ||= {}
+  Memory.gates[room.name] ||= {}
+
   exitEdges.forEach((edge : any, index : number) => {
-    if(internal.indexOf(index) >= 0) return
     const tiles = room.find(edge.find) as RoomPosition[]
     if(tiles.length == 0) return
 
-    const exit = spawn.pos.findClosestByPath(tiles, { ignoreDestructibleStructures: true, ignoreCreeps: true })
-    if(!exit) return
-
-    const path = room.findPath(spawn.pos, exit, { ignoreDestructibleStructures: true, ignoreCreeps: true })
-    if(path.length == 0) return
-
-    let gate : RoomPosition | null = null
-    for(let step = path.length - 1; step >= 0 && !gate; step--){
-      if(edge.depthOf(path[step].x, path[step].y) == 2) gate = new RoomPosition(path[step].x, path[step].y, room.name)
+    const passable = (position : number) => {
+      const outer = edge.at(room, 1, position) as RoomPosition
+      const inner = edge.at(room, 2, position) as RoomPosition
+      return terrain.get(outer.x, outer.y) != TERRAIN_MASK_WALL && terrain.get(inner.x, inner.y) != TERRAIN_MASK_WALL
     }
-    if(!gate) return
 
-    const gateIndex = edge.indexOf(gate.x, gate.y)
+    let gateIndex : number | null = neighbourGateIndex(room, index)
+    if(gateIndex !== null && !passable(gateIndex)) gateIndex = null
+
+    if(gateIndex === null){
+      const exit = spawn.pos.findClosestByPath(tiles, { ignoreDestructibleStructures: true, ignoreCreeps: true })
+      if(!exit) return
+
+      const path = room.findPath(spawn.pos, exit, { ignoreDestructibleStructures: true, ignoreCreeps: true })
+      if(path.length == 0) return
+
+      for(let step = path.length - 1; step >= 0 && gateIndex === null; step--){
+        if(edge.depthOf(path[step].x, path[step].y) == 2) gateIndex = edge.indexOf(path[step].x, path[step].y)
+      }
+    }
+
+    if(gateIndex === null) return
+
+    Memory.gates[room.name][String(index)] = gateIndex
+
     const guards = [gateIndex - 1, gateIndex, gateIndex + 1]
-      .filter(index => index > 0 && index < 49)
-      .map(index => edge.at(room, 3, index) as RoomPosition)
+      .filter(position => position > 0 && position < 49)
+      .map(position => edge.at(room, 3, position) as RoomPosition)
 
-    gates.push({ gate, guards })
+    gates.push({ gate: edge.at(room, 2, gateIndex) as RoomPosition, guards })
   })
 
   return gates
@@ -345,10 +364,7 @@ const wallsLayout = (room : Room) => {
     claim(highCap[0], highCap[1], STRUCTURE_WALL)
   }
 
-  const internalSides = internalEdges(room)
-
   wallEdges.forEach((edge, index) => {
-    if(internalSides.indexOf(index) >= 0) return
     let runStart = -1
     for(let i = 0; i <= 50; i++){
       const border = i < 50 ? edge(0, i) : null
