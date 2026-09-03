@@ -1,7 +1,9 @@
 import { barrierTargetHits } from "processors/processRoom"
 import { posByDirections } from "buildings/layouts"
 
-const scoutSearchDepth = 12
+const scoutSearchDepth = 5
+const maxExpansionDistance = 5
+const scoutStuckTicks = 25
 
 const ownedRooms = () => Object.values(Game.rooms).filter(room => !!room.controller && room.controller.my)
 
@@ -216,6 +218,7 @@ function bestExpansion(bases : Room[]) : ExpansionPlan | null {
       const route = Game.map.findRoute(base.name, name, { routeCallback: keeperAware })
       if(route == ERR_NO_PATH) return
       const distance = (route as { exit : ExitConstant, room : string }[]).length
+      if(distance > maxExpansionDistance) return
       if(!best || distance < best.distance) best = { room: name, base: base.name, distance }
     })
   })
@@ -228,9 +231,30 @@ export default function manageExpansion() {
 
   Object.values(Game.creeps).forEach(creep => {
     if(creep.memory.role != "scout") return
+    if(!Memory.scoutTarget){
+      creep.memory.stuckFor = 0
+      creep.memory.lastSpot = undefined
+    } else {
+      const spot = `${creep.room.name}:${creep.pos.x}:${creep.pos.y}`
+      creep.memory.stuckFor = creep.memory.lastSpot == spot ? (creep.memory.stuckFor || 0) + 1 : 0
+      creep.memory.lastSpot = spot
+
+      if((creep.memory.stuckFor || 0) >= scoutStuckTicks){
+        const controller = creep.room.controller
+        if(!controller || !controller.my){
+          Memory.badRoomNames[creep.room.name] = true
+          console.log(`scout stuck in ${creep.room.name}, room blacklisted`)
+        }
+        Memory.scoutTarget = null
+        creep.memory.stuckFor = 0
+      }
+    }
+
     creep.memory.lastRoom = creep.room.name
     creep.memory.lastTicksToLive = creep.ticksToLive
   })
+
+  Memory.badRoomNames ||= {}
 
   const owned = ownedRooms()
 

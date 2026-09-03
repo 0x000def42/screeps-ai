@@ -62,6 +62,8 @@ declare global {
     _travel?: any
     lastRoom?: string
     lastTicksToLive?: number
+    lastSpot?: string
+    stuckFor?: number
   }
 
   interface SpawnMemory {
