@@ -1,8 +1,8 @@
 import { barrierTargetHits } from "processors/processRoom"
 import { posByDirections } from "buildings/layouts"
 
-const scoutSearchDepth = 5
-const maxExpansionDistance = 5
+const scoutSearchDepth = 7
+const maxExpansionDistance = 7
 const scoutStuckTicks = 25
 
 const ownedRooms = () => Object.values(Game.rooms).filter(room => !!room.controller && room.controller.my)
