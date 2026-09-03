@@ -62,7 +62,9 @@ declare global {
     _travel?: any
     lastRoom?: string
     lastTicksToLive?: number
-    lastSpot?: string
+    scoutFor?: string
+    bestDistance?: number
+    lastForeignRoom?: string
     stuckFor?: number
   }
 

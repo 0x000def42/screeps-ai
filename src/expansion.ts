@@ -3,7 +3,23 @@ import { posByDirections } from "buildings/layouts"
 
 const scoutSearchDepth = 7
 const maxExpansionDistance = 7
-const scoutStuckTicks = 25
+const scoutStuckTicks = 120
+
+const roomCoords = (name : string) => {
+  const parsed = /^([WE])(\d+)([NS])(\d+)$/.exec(name)
+  if(!parsed) return null
+  return {
+    x: parsed[1] == "W" ? -Number(parsed[2]) - 1 : Number(parsed[2]),
+    y: parsed[3] == "N" ? -Number(parsed[4]) - 1 : Number(parsed[4])
+  }
+}
+
+const roomDistance = (from : string, to : string) => {
+  const a = roomCoords(from)
+  const b = roomCoords(to)
+  if(!a || !b) return 0
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+}
 
 const ownedRooms = () => Object.values(Game.rooms).filter(room => !!room.controller && room.controller.my)
 
@@ -231,25 +247,37 @@ export default function manageExpansion() {
 
   Object.values(Game.creeps).forEach(creep => {
     if(creep.memory.role != "scout") return
+    const controller = creep.room.controller
+    if(!controller || !controller.my) creep.memory.lastForeignRoom = creep.room.name
+
     if(!Memory.scoutTarget){
       creep.memory.stuckFor = 0
-      creep.memory.lastSpot = undefined
+      creep.memory.scoutFor = undefined
     } else {
-      const spot = `${creep.room.name}:${creep.pos.x}:${creep.pos.y}`
-      creep.memory.stuckFor = creep.memory.lastSpot == spot ? (creep.memory.stuckFor || 0) + 1 : 0
-      creep.memory.lastSpot = spot
+      if(creep.memory.scoutFor != Memory.scoutTarget){
+        creep.memory.scoutFor = Memory.scoutTarget
+        creep.memory.bestDistance = undefined
+        creep.memory.stuckFor = 0
+      }
+
+      const distance = roomDistance(creep.room.name, Memory.scoutTarget)
+      if(creep.memory.bestDistance === undefined || distance < creep.memory.bestDistance){
+        creep.memory.bestDistance = distance
+        creep.memory.stuckFor = 0
+      } else {
+        creep.memory.stuckFor = (creep.memory.stuckFor || 0) + 1
+      }
 
       if((creep.memory.stuckFor || 0) >= scoutStuckTicks){
-        const controller = creep.room.controller
-        if(!controller || !controller.my){
-          Memory.badRoomNames[creep.room.name] = true
-          console.log(`scout stuck in ${creep.room.name}, room blacklisted`)
+        if(creep.memory.lastForeignRoom){
+          Memory.badRoomNames[creep.memory.lastForeignRoom] = true
+          console.log(`scout made no progress, ${creep.memory.lastForeignRoom} blacklisted`)
         }
         Memory.scoutTarget = null
         creep.memory.stuckFor = 0
+        creep.memory.bestDistance = undefined
       }
     }
-
     creep.memory.lastRoom = creep.room.name
     creep.memory.lastTicksToLive = creep.ticksToLive
   })
