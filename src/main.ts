@@ -14,7 +14,7 @@ import processRoom from "./processors/processRoom"
 import defineLayouts from "./buildings/check"
 import processBuilding from "buildings/processBuilding";
 import defineMetrics, { accrueSourcePotential } from "./metrics"
-import manageExpansion from "./expansion"
+import manageExpansion, { recordScoutLosses } from "./expansion"
 import { measure } from "./profiler"
 import exportStats from "./stats"
 
@@ -60,6 +60,8 @@ declare global {
     sourceId: Id<_HasId> | null
     _trav?: any
     _travel?: any
+    lastRoom?: string
+    lastTicksToLive?: number
   }
 
   interface SpawnMemory {
@@ -127,6 +129,8 @@ export const loop = ErrorMapper.wrapLoop(() => {
       })
     })
   })
+
+  measure("scoutLosses", () => recordScoutLosses())
 
   measure("cleanup", () => {
     for (const name in Memory.creeps) {

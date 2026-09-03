@@ -134,6 +134,21 @@ export function layoutCapacity(roomName : string) {
   return fitted
 }
 
+export function recordScoutLosses() {
+  Memory.badRoomNames ||= {}
+
+  Object.keys(Memory.creeps).forEach(name => {
+    if(name in Game.creeps) return
+
+    const lost = Memory.creeps[name]
+    if(lost.role != "scout" || !lost.lastRoom) return
+    if((lost.lastTicksToLive || 0) < 30) return
+
+    Memory.badRoomNames[lost.lastRoom] = true
+    console.log(`scout lost in ${lost.lastRoom}, room blacklisted`)
+  })
+}
+
 export function readyToExpand(room : Room) {
   const controller = room.controller
   if(!controller || !controller.my || controller.level < 3) return false
@@ -157,6 +172,7 @@ function nextScoutTarget() {
       Object.values(exits).forEach(neighbour => {
         if(!neighbour || visited[neighbour]) return
         visited[neighbour] = true
+        if(Memory.badRoomNames && Memory.badRoomNames[neighbour]) return
         const intel = Memory.intel[neighbour]
         if(!intel) {
           next.unshift(neighbour)
@@ -175,6 +191,7 @@ function nextScoutTarget() {
 }
 
 function keeperAware(roomName : string) {
+  if(Memory.badRoomNames && Memory.badRoomNames[roomName]) return Infinity
   const intel = Memory.intel[roomName]
   return intel && intel.keeper ? Infinity : 1
 }
@@ -191,6 +208,7 @@ function bestExpansion(bases : Room[]) : ExpansionPlan | null {
   Object.keys(Memory.intel).forEach(name => {
     const intel = Memory.intel[name]
     if(intel.keeper || intel.owner || !intel.claimable || intel.sources < 2) return
+    if(Memory.badRoomNames && Memory.badRoomNames[name]) return
 
 
     bases.forEach(base => {
@@ -207,6 +225,12 @@ function bestExpansion(bases : Room[]) : ExpansionPlan | null {
 
 export default function manageExpansion() {
   recordIntel()
+
+  Object.values(Game.creeps).forEach(creep => {
+    if(creep.memory.role != "scout") return
+    creep.memory.lastRoom = creep.room.name
+    creep.memory.lastTicksToLive = creep.ticksToLive
+  })
 
   const owned = ownedRooms()
 
